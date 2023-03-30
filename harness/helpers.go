@@ -6,6 +6,9 @@ import (
 	"runtime"
 )
 
+// UNUSED allows unused variables to be included in Go programs: USE WITH CAUTION!
+func UNUSED(x ...interface{}) {}
+
 // MaxParallelism return conservative number of suggested max parallelism.
 func MaxParallelism() int {
 	var maxProcs = runtime.GOMAXPROCS(0)
