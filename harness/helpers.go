@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"bitbucket.services.cymru.com/AUG5/informant/internal/util"
 )
 
 // MaxParallelism return conservative number of suggested max parallelism.
