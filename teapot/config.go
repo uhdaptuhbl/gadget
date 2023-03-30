@@ -1,6 +1,7 @@
 package teapot
 
 import (
+	"net/http"
 	"time"
 )
 

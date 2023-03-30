@@ -1,9 +1,6 @@
 package harness
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
