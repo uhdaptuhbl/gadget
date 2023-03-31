@@ -14,7 +14,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 
-	"bitbucket.services.cymru.com/fst/gadget/settings"
+	"gadget/settings"
 )
 
 const ProfileCPU = "cpu"

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"bitbucket.services.cymru.com/fst/gadget/halt"
-	"bitbucket.services.cymru.com/fst/gadget/harness"
-	"bitbucket.services.cymru.com/fst/gadget/settings"
-	"bitbucket.services.cymru.com/fst/gadget/teapot"
+	"gadget/halt"
+	"gadget/harness"
+	"gadget/settings"
+	"gadget/teapot"
 )
 
 func main() {

@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
-	"bitbucket.services.cymru.com/voltron/logging"
+	"gadget/logging"
 )
 
 type HTTPClientFactory func() (*Client, error)

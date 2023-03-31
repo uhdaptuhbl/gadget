@@ -13,9 +13,9 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"bitbucket.services.cymru.com/fst/gadget/halt"
-	"bitbucket.services.cymru.com/fst/gadget/settings"
-	"bitbucket.services.cymru.com/voltron/logging"
+	"gadget/halt"
+	"gadget/settings"
+	"gadget/logging"
 )
 
 const KeyConfigPath = "config"

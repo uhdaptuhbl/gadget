@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"time"
 
-	"bitbucket.services.cymru.com/voltron/logging"
+	"gadget/logging"
 )
 
 type HandlerFunc func(signal os.Signal) error
