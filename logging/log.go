@@ -69,15 +69,17 @@ const RequestIDKey CorrelationID = iota
 
 // Config - logging settings
 type Config struct {
-	Build       string   `mapstructure:"build" json:"build"`
-	Version     string   `mapstructure:"version" json:"version"`
-	Format      string   `mapstructure:"format" json:"format"`
-	Level       string   `mapstructure:"level" json:"level"`
-	Verbosity   string   `mapstructure:"verbosity" json:"verbosity"`
+	Build     string       `mapstructure:"build" json:"build"`
+	Version   string       `mapstructure:"version" json:"version"`
+	Format    LogFormat    `mapstructure:"format" json:"format"`
+	Level     LogLevel     `mapstructure:"level" json:"level"`
+	Verbosity LogVerbosity `mapstructure:"verbosity" json:"verbosity"`
+
+	// typically a local absolute file path but when using the zap logging there are some additional options. See: https://pkg.go.dev/go.uber.org/zap#Open
 	OutputPaths []string `mapstructure:"outputpaths" json:"outputPaths"`
 }
 
-// Logger - base logging interface
+// Logger - Standard Team Cymru log interface
 type Logger interface {
 	// Configure - configure the logger based on a configuration struct
 	Configure(Config) error

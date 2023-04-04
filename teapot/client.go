@@ -54,8 +54,8 @@ http.Response, and raw body content as needed, without usage assumptions.
 type Result struct {
 	Request  *http.Request
 	Response *http.Response
-	Body  []byte
-	Error error
+	Body     []byte
+	Error    error
 }
 
 func (res *Result) StatusCode() int {
@@ -145,7 +145,7 @@ type Client struct {
 	userAgent string
 }
 
-func New(conf Config) *Client {
+func New(conf ClientConfig) *Client {
 	var cl = &Client{
 		userAgent: conf.UserAgent,
 	}

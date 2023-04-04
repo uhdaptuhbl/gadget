@@ -29,7 +29,7 @@ func main() {
 	withExtraFields.Infow("testing", "field1", "1")
 
 	// Gorm logger
-	gl := logging.GormLogger(l, "", false, "")
+	gl := logging.GormLogger(logging.GetZapLogger(l), "", false, "")
 	gl.Info(context.Background(), "blah")
 
 	// Pgx logger

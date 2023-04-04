@@ -21,16 +21,28 @@ func FormatMessage(level string, msg string) string {
 		msg,
 	)
 }
+
+func LogDebug(msg string) {
+	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("DEBUG", msg) + "\n"))
+}
+func LogDebugf(msg string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("DEBUG", msg) + "\n"), args...)
+}
+
+func LogInfo(msg string) {
+	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("INFO", msg) + "\n"))
+}
 func LogInfof(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("INFO", msg) + "\n"), args...)
 }
-func LogFatal(msg string) {
+
+func LogFatal(exitCode int, msg string) {
 	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("ERROR", "FATAL: "+msg) + "\n"))
-	os.Exit(ExitCodeError)
+	os.Exit(exitCode)
 }
-func LogFatalf(msg string, args ...interface{}) {
+func LogFatalf(exitCode int, msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("ERROR", "FATAL: "+msg) + "\n"), args...)
-	os.Exit(ExitCodeError)
+	os.Exit(exitCode)
 }
 
 func PrettyJSON(content []byte) (string, error) {

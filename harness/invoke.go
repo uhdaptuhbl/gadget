@@ -3,53 +3,26 @@ package harness
 import (
 	"context"
 	"fmt"
+	"gadget/exec"
 	"os"
 	"runtime"
-	"strings"
-	"syscall"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/pkg/profile"
-	flag "github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
-
-	"gadget/settings"
 )
 
-const ProfileCPU = "cpu"
-const ProfileMem = "mem"
-const ProfileMutex = "mutex"
-const ProfileBlock = "block"
-const ProfileTrace = "trace"
-
-func ProfileModes() []string {
-	return []string{
-		string(ProfileCPU),
-		string(ProfileMem),
-		string(ProfileMutex),
-		string(ProfileBlock),
-		string(ProfileTrace),
-	}
-}
-
-func PrettyProfileModes() string {
-	return strings.Join(ProfileModes(), ",")
-}
-
-/*
-Execute runs the main program with interrupt handlers and config loading.
-
-TODO: convert this all to Cobra since it auto-handles help messages and such
-*/
-func Invoke(initialize InitializeFunc, invokeArgs InvokeArgs) {
+// Invoke runs cobra commands along with boilerplate.
+func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options ...exec.Option) {
 	var err error
-	var program Program
-
-	var interruptch = make(chan os.Signal, 1)
+	var invoke exec.Invocation
+	var app exec.Application
+	var cmd *cobra.Command
 
 	defer func() {
 		// TODO: is recover() actually needed to get a stack trace?
+		// TODO: move this to helper in exec module
 		if r := recover(); r != nil {
 			var buf = make([]byte, 1<<10)
 			runtime.Stack(buf, false)
@@ -57,71 +30,74 @@ func Invoke(initialize InitializeFunc, invokeArgs InvokeArgs) {
 		}
 	}()
 
-	if program, err = initialize(invokeArgs); err != nil {
-		LogFatalf(fmt.Sprintf("%v", err))
+	for _, option := range options {
+		option(&invoke)
 	}
 
-	if flags := program.Flags(); flags != nil && !invokeArgs.NoParseFlags {
-		settings.Flags.IgnoreUnknown(false)(flags)
-		if err = flags.Parse(invokeArgs.Args); err != nil {
-			if errors.Is(err, flag.ErrHelp) {
-				os.Exit(0)
-			}
-			LogFatalf("parsing runtime options failed: %v", err)
+	if app, err = initialize(&invoke); err != nil {
+		LogFatalf(invoke.ExitCodeError, "error initializing program: %v", err)
+	}
+
+	if cmd = app.Command(); cmd == nil {
+		LogFatalf(invoke.ExitCodeError, "nil command: %v", app)
+	}
+
+	// if flags := cmd.Flags(); flags != nil && !invoke.NoParseFlags {
+	// 	settings.Flags.IgnoreUnknown(false)(flags)
+	// 	if err = flags.Parse(invoke.Args); err != nil {
+	// 		if errors.Is(err, flag.ErrHelp) {
+	// 			os.Exit(0)
+	// 		}
+	// 		LogFatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
+	// 	}
+	// }
+
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// NOTE: cobra and viper can be bound in a few locations,
+		// but PersistencePreRunE on the root command works well.
+		// NOTE: app.Load() should have access to the cmd and args
+		// from the invocation object it got when initialized.
+		if err = app.Load(); err != nil {
+			LogFatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
 		}
+		return nil
 	}
 
-	if err = program.Load(); err != nil {
-		LogFatalf("program.Load() failed: %v", err)
-	}
+	// if invoke.HelpOnEmptyArgs && len(invoke.Args) == 0 {
+	// 	if flags := app.Flags(); flags != nil {
+	// 		if flags.Usage != nil {
+	// 			flags.Usage()
+	// 		} else {
+	// 			flags.PrintDefaults()
+	// 		}
+	// 	}
+	// 	os.Exit(0)
+	// }
 
-	if invokeArgs.HelpOnEmptyArgs && len(invokeArgs.Args) == 0 {
-		if flags := program.Flags(); flags != nil {
-			if flags.Usage != nil {
-				flags.Usage()
-			} else {
-				flags.PrintDefaults()
-			}
-		}
-		os.Exit(0)
-	}
+	// if invoke.CreateMissingConfigFile {
+	// 	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 		LogFatal(invoke.ExitCodeError, fmt.Sprintf("%v", err))
+	// 	}
+	// 	// TODO: default config file writing
+	// 	// var createdPath string
+	// 	// if createdPath, err = config.WriteDefaultConfigFile(); err != nil {
+	// 	// 	if !errors.Is(err, os.ErrExist) {
+	// 	// 		LogFatal(fmt.Sprintf("%v", err))
+	// 	// 	}
+	// 	// }
+	// 	// if errors.Is(err, os.ErrExist) {
+	// 	// 	LogInfof("config path already exists: %s", createdPath)
+	// 	// } else {
+	// 	// 	LogInfof("created config file: %s", createdPath)
+	// 	// }
 
-	if invokeArgs.CreateMissingConfigFile {
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			LogFatal(fmt.Sprintf("%v", err))
-		}
-		// TODO: default config file writing
-		// var createdPath string
-		// if createdPath, err = config.WriteDefaultConfigFile(); err != nil {
-		// 	if !errors.Is(err, os.ErrExist) {
-		// 		LogFatal(fmt.Sprintf("%v", err))
-		// 	}
-		// }
-		// if errors.Is(err, os.ErrExist) {
-		// 	LogInfof("config path already exists: %s", createdPath)
-		// } else {
-		// 	LogInfof("created config file: %s", createdPath)
-		// }
+	// 	// // this can still error if --config is specified and is different from default
+	// 	// if err = conf.Load(); err != nil {
+	// 	// 	LogFatal(fmt.Sprintf("%v", err))
+	// 	// }
+	// }
 
-		// // this can still error if --config is specified and is different from default
-		// if err = conf.Load(); err != nil {
-		// 	LogFatal(fmt.Sprintf("%v", err))
-		// }
-	}
-
-	var updateConfig = program.OnConfigChange()
-	if snek := program.Viper(); snek != nil && updateConfig != nil && snek.ConfigFileUsed() != "" {
-		snek.OnConfigChange(func(e fsnotify.Event) {
-			if err = updateConfig(); err != nil {
-				interruptch <- syscall.SIGTERM
-			}
-		})
-		snek.WatchConfig()
-	} else if updateConfig != nil && snek == nil {
-		LogFatalf("OnConfigChange() specified but Viper instance is nil")
-	}
-
-	switch program.ProfileMode() {
+	switch app.ProfileMode() {
 	case "cpu":
 		defer profile.Start(profile.CPUProfile).Stop()
 	case "mem":
@@ -134,12 +110,14 @@ func Invoke(initialize InitializeFunc, invokeArgs InvokeArgs) {
 		defer profile.Start(profile.TraceProfile).Stop()
 	}
 
+	var interruptch = make(chan os.Signal, 1)
+
 	var ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 
 	var g, gctx = errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return program.HandleSignals(ctx, cancel, interruptch)
+		return app.HandleSignals(ctx, cancel, interruptch)
 	})
 	g.Go(func() error {
 		var runerr error
@@ -147,13 +125,12 @@ func Invoke(initialize InitializeFunc, invokeArgs InvokeArgs) {
 		// handler? Would it be more idiomatic to close the channel if that works?
 		defer cancel()
 
-		if runerr = program.Run(gctx); runerr != nil {
-			runerr = errors.Wrap(runerr, "program.Run()")
+		if runerr = cmd.ExecuteContext(gctx); runerr != nil {
+			runerr = errors.Wrap(runerr, "app.Run()")
 		}
 		return runerr
 	})
 	if err = g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		LogFatalf("%v", err)
-		os.Exit(ExitCodeError)
+		LogFatalf(invoke.ExitCodeError, "%v", err)
 	}
 }
