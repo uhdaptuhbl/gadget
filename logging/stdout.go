@@ -1,7 +1,7 @@
 package logging
 
 // NewStdoutLogger - create a new stdout logger instance
-func NewStdoutLogger(level string, format string) (Logger, error) {
+func NewStdoutLogger(level LogLevel, format LogFormat) (Logger, error) {
 	zl := ZapLogger{}
 	err := zl.Configure(Config{
 		Format:      format,

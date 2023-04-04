@@ -26,6 +26,7 @@ func Invoke(initialize func(exec.Invocation) (exec.Application, error), options 
 
 	defer func() {
 		// TODO: is recover() actually needed to get a stack trace?
+		// TODO: move this to helper in exec module
 		if r := recover(); r != nil {
 			var buf = make([]byte, 1<<10)
 			runtime.Stack(buf, false)

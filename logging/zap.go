@@ -78,22 +78,28 @@ func (z *ZapLogger) Configure(config Config) error {
 	var zapLogger *zap.Logger
 
 	switch config.Format {
-	case string(LogFormatHuman):
+	case LogFormatHuman:
 		z.cfg = zap.NewDevelopmentConfig()
-	case string(LogFormatJSON):
+		// z.cfg.EncoderConfig.ConsoleSeparator = " "
+		// z.cfg.EncoderConfig.EncodeCaller = StandardCallerEncoder
+		// z.cfg.EncoderConfig.EncodeTime = StandardTimeEncoder
+		// z.cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	case LogFormatJSON:
 		z.cfg = zap.NewProductionConfig()
+		// z.cfg.EncoderConfig.EncodeTime = RFC3339UTCTimeEncoder
+		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	default:
 		return &InvalidLogFormatError{Input: config.Format}
 	}
 
 	switch config.Level {
-	case string(LogLevelError):
+	case LogLevelError:
 		z.cfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
-	case string(LogLevelWarn):
+	case LogLevelWarn:
 		z.cfg.Level = zap.NewAtomicLevelAt(zap.WarnLevel)
-	case string(LogLevelInfo):
+	case LogLevelInfo:
 		z.cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	case string(LogLevelDebug):
+	case LogLevelDebug:
 		z.cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 		z.debug = true
 	default:
@@ -101,18 +107,18 @@ func (z *ZapLogger) Configure(config Config) error {
 	}
 
 	switch config.Verbosity {
-	case string(LogVerbosityBare):
+	case LogVerbosityBare:
 		z.cfg.DisableCaller = true
 		z.cfg.DisableStacktrace = true
-		z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	case string(LogVerbositySimple):
+	case LogVerbositySimple:
+		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = true
-		z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	case string(LogVerbosityVerbose):
+	case LogVerbosityVerbose:
+		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = false
-		z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 
 		// NOTE: sadly there is no hook or encoder that can be used to override
 		// and shorten the func key output which is the full path by default.
@@ -142,6 +148,33 @@ func (z *ZapLogger) Configure(config Config) error {
 	z.logger = zapLogger.WithOptions(zap.AddCallerSkip(1)).Sugar()
 
 	return err
+}
+
+// StandardTimeEncoder serializes a time.Time
+//
+// If enc supports AppendTimeLayout(t time.Time,layout string), it's used
+// instead of appending a pre-formatted string value.
+func StandardTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	encodeTimeLayout(t, "2006-01-02 15:04:05.000000", enc)
+}
+
+func encodeTimeLayout(t time.Time, layout string, enc zapcore.PrimitiveArrayEncoder) {
+	type appendTimeEncoder interface {
+		AppendTimeLayout(time.Time, string)
+	}
+
+	if enc, ok := enc.(appendTimeEncoder); ok {
+		enc.AppendTimeLayout(t, layout)
+		return
+	}
+
+	enc.AppendString(t.Format(layout))
+}
+
+// StandardCallerEncoder s
+func StandardCallerEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
+	// TODO: consider using a byte-oriented API to save an allocation.
+	enc.AppendString(filepath.Base(caller.TrimmedPath()))
 }
 
 /*
