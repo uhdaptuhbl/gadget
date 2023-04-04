@@ -104,7 +104,7 @@ func (l ZapGormLogger) Trace(ctx context.Context, begin time.Time, fc func() (st
 
 	switch {
 	case l.checkErrorTrace(err):
-		l.logger().Errorw(
+		l.logger().Sugar().Errorw(
 			l.cfg.TracePrefix,
 			zap.Error(err),
 			zap.Duration("elapsed", elapsed),
@@ -112,14 +112,14 @@ func (l ZapGormLogger) Trace(ctx context.Context, begin time.Time, fc func() (st
 			zap.String("sql", sql),
 		)
 	case l.checkElapsedTrace(elapsed):
-		l.logger().Warnw(
+		l.logger().Sugar().Warnw(
 			l.cfg.TracePrefix,
 			zap.Duration("elapsed", elapsed),
 			zap.Int64("rows", rows),
 			zap.String("sql", sql),
 		)
 	case l.LogLevel >= gormlogger.Info:
-		l.logger().Debugw(
+		l.logger().Sugar().Debugw(
 			l.cfg.TracePrefix,
 			zap.Duration("elapsed", elapsed),
 			zap.Int64("rows", rows),

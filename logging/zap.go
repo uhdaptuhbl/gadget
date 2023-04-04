@@ -5,7 +5,9 @@ import (
 	"errors"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -89,7 +91,7 @@ func (z *ZapLogger) Configure(config Config) error {
 		// z.cfg.EncoderConfig.EncodeTime = RFC3339UTCTimeEncoder
 		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	default:
-		return &InvalidLogFormatError{Input: config.Format}
+		return &InvalidLogFormatError{Input: string(config.Format)}
 	}
 
 	switch config.Level {
@@ -103,7 +105,7 @@ func (z *ZapLogger) Configure(config Config) error {
 		z.cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 		z.debug = true
 	default:
-		return &InvalidLogLevelError{Input: config.Level}
+		return &InvalidLogLevelError{Input: string(config.Level)}
 	}
 
 	switch config.Verbosity {
@@ -136,7 +138,7 @@ func (z *ZapLogger) Configure(config Config) error {
 			z.cfg.InitialFields["host"] = name
 		}
 	default:
-		return &InvalidVerbosityError{Input: config.Verbosity}
+		return &InvalidVerbosityError{Input: string(config.Verbosity)}
 	}
 
 	z.cfg.OutputPaths = config.OutputPaths
