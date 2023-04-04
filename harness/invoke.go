@@ -4,21 +4,17 @@ import (
 	"context"
 	"fmt"
 	"gadget/exec"
-	"gadget/settings"
 	"os"
 	"runtime"
-	"syscall"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
 // Invoke runs cobra commands along with boilerplate.
-func Invoke(initialize func(exec.Invocation) (exec.Application, error), options ...exec.Option) {
+func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options ...exec.Option) {
 	var err error
 	var invoke exec.Invocation
 	var app exec.Application
@@ -34,75 +30,72 @@ func Invoke(initialize func(exec.Invocation) (exec.Application, error), options 
 		}
 	}()
 
-	var interruptch = make(chan os.Signal, 1)
-
 	for _, option := range options {
 		option(&invoke)
 	}
 
-	if app, err = initialize(invoke); err != nil {
+	if app, err = initialize(&invoke); err != nil {
 		LogFatalf(invoke.ExitCodeError, "error initializing program: %v", err)
 	}
 
-	if flags := cmd.Flags(); flags != nil && !invoke.NoParseFlags {
-		settings.Flags.IgnoreUnknown(false)(flags)
-		if err = flags.Parse(invoke.Args); err != nil {
-			if errors.Is(err, flag.ErrHelp) {
-				os.Exit(0)
-			}
-			LogFatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
+	if cmd = app.Command(); cmd == nil {
+		LogFatalf(invoke.ExitCodeError, "nil command: %v", app)
+	}
+
+	// if flags := cmd.Flags(); flags != nil && !invoke.NoParseFlags {
+	// 	settings.Flags.IgnoreUnknown(false)(flags)
+	// 	if err = flags.Parse(invoke.Args); err != nil {
+	// 		if errors.Is(err, flag.ErrHelp) {
+	// 			os.Exit(0)
+	// 		}
+	// 		LogFatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
+	// 	}
+	// }
+
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// NOTE: cobra and viper can be bound in a few locations,
+		// but PersistencePreRunE on the root command works well.
+		// NOTE: app.Load() should have access to the cmd and args
+		// from the invocation object it got when initialized.
+		if err = app.Load(); err != nil {
+			LogFatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
 		}
+		return nil
 	}
 
-	if err = app.Load(); err != nil {
-		LogFatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
-	}
+	// if invoke.HelpOnEmptyArgs && len(invoke.Args) == 0 {
+	// 	if flags := app.Flags(); flags != nil {
+	// 		if flags.Usage != nil {
+	// 			flags.Usage()
+	// 		} else {
+	// 			flags.PrintDefaults()
+	// 		}
+	// 	}
+	// 	os.Exit(0)
+	// }
 
-	if invoke.HelpOnEmptyArgs && len(invoke.Args) == 0 {
-		if flags := app.Flags(); flags != nil {
-			if flags.Usage != nil {
-				flags.Usage()
-			} else {
-				flags.PrintDefaults()
-			}
-		}
-		os.Exit(0)
-	}
+	// if invoke.CreateMissingConfigFile {
+	// 	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 		LogFatal(invoke.ExitCodeError, fmt.Sprintf("%v", err))
+	// 	}
+	// 	// TODO: default config file writing
+	// 	// var createdPath string
+	// 	// if createdPath, err = config.WriteDefaultConfigFile(); err != nil {
+	// 	// 	if !errors.Is(err, os.ErrExist) {
+	// 	// 		LogFatal(fmt.Sprintf("%v", err))
+	// 	// 	}
+	// 	// }
+	// 	// if errors.Is(err, os.ErrExist) {
+	// 	// 	LogInfof("config path already exists: %s", createdPath)
+	// 	// } else {
+	// 	// 	LogInfof("created config file: %s", createdPath)
+	// 	// }
 
-	if invoke.CreateMissingConfigFile {
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			LogFatal(invoke.ExitCodeError, fmt.Sprintf("%v", err))
-		}
-		// TODO: default config file writing
-		// var createdPath string
-		// if createdPath, err = config.WriteDefaultConfigFile(); err != nil {
-		// 	if !errors.Is(err, os.ErrExist) {
-		// 		LogFatal(fmt.Sprintf("%v", err))
-		// 	}
-		// }
-		// if errors.Is(err, os.ErrExist) {
-		// 	LogInfof("config path already exists: %s", createdPath)
-		// } else {
-		// 	LogInfof("created config file: %s", createdPath)
-		// }
-
-		// // this can still error if --config is specified and is different from default
-		// if err = conf.Load(); err != nil {
-		// 	LogFatal(fmt.Sprintf("%v", err))
-		// }
-	}
-
-	var updateConfig = app.OnConfigChange()
-	if snek := app.Viper(); snek != nil && updateConfig != nil && snek.ConfigFileUsed() != "" {
-		snek.OnConfigChange(func(e fsnotify.Event) {
-			if err = updateConfig(); err != nil {
-				interruptch <- syscall.SIGTERM
-			}
-		})
-		snek.WatchConfig()
-	} else if updateConfig != nil && snek == nil {
-		LogFatalf(invoke.ExitCodeError, "OnConfigChange() specified but Viper instance is nil")
-	}
+	// 	// // this can still error if --config is specified and is different from default
+	// 	// if err = conf.Load(); err != nil {
+	// 	// 	LogFatal(fmt.Sprintf("%v", err))
+	// 	// }
+	// }
 
 	switch app.ProfileMode() {
 	case "cpu":
@@ -117,6 +110,8 @@ func Invoke(initialize func(exec.Invocation) (exec.Application, error), options 
 		defer profile.Start(profile.TraceProfile).Stop()
 	}
 
+	var interruptch = make(chan os.Signal, 1)
+
 	var ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 
@@ -130,7 +125,7 @@ func Invoke(initialize func(exec.Invocation) (exec.Application, error), options 
 		// handler? Would it be more idiomatic to close the channel if that works?
 		defer cancel()
 
-		if runerr = app.Run(gctx); runerr != nil {
+		if runerr = cmd.ExecuteContext(gctx); runerr != nil {
 			runerr = errors.Wrap(runerr, "app.Run()")
 		}
 		return runerr
