@@ -19,7 +19,7 @@ import (
 	"gadget/settings"
 )
 
-type InitializeFunc func(InvokeArgs) (exec.Application, error)
+type InitializeFunc func(InvokeArgs) (exec.Program, error)
 
 /*
 Execute runs the main program with interrupt handlers and config loading.
@@ -28,7 +28,7 @@ TODO: convert this all to Cobra since it auto-handles help messages and such
 */
 func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 	var err error
-	var program exec.Application
+	var program exec.Program
 
 	var interruptch = make(chan os.Signal, 1)
 
