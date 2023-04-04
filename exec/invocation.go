@@ -1,13 +1,10 @@
-package harness
+package exec
 
 import (
-	// "context"
 	"fmt"
 	"os"
-
-	// "os/signal"
+	"runtime"
 	"strings"
-	// "syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,39 +15,49 @@ import (
 	"gadget/halt"
 	"gadget/logging"
 	"gadget/settings"
+	"gadget/sneks"
 )
 
-/*
-InvokeArgs provides the necessary runtime values to the initializer function.
-*/
-type InvokeArgs struct {
+const buildsep = "#"
+
+// MaxParallelism return conservative number of suggested max parallelism.
+func MaxParallelism() int {
+	var maxProcs = runtime.GOMAXPROCS(0)
+	var numCPU = runtime.NumCPU()
+	if maxProcs < numCPU {
+		return maxProcs
+	}
+	return numCPU
+}
+
+// Invocation provides the necessary runtime values to the initializer function.
+type Invocation struct {
 	Name      string
-	Args      []string
 	Version   string
-	BuildID   string
+	BuildId   string
 	BuildDate string
+	Args      []string
 
-	ExitCodeError   int
-	ShutdownTimeout time.Duration
-
-	ExitOnError     bool
-	NoParseFlags    bool
-	HelpOnEmptyArgs bool
-
-	// TODO: where should the config ext be stored / passed from?
+	HelpOnEmptyArgs         bool
+	NoParseFlags            bool
 	ConfigExt               string
 	CreateMissingConfigFile bool
 
 	InterruptHandler halt.HandlerFunc
+	ShutdownTimeout  time.Duration
+	ExitOnError      bool
+	ExitCodeError    int
+
+	Sneks sneks.Sneks
 }
 
 // TODO: implement default config file writing
 
-func (iArgs InvokeArgs) Build() string {
-	return (iArgs.BuildDate + "#" + iArgs.BuildID)
+func (iArgs Invocation) Build() string {
+	return (iArgs.BuildDate + buildsep + iArgs.BuildId)
 }
 
-func (iArgs InvokeArgs) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
+func (iArgs Invocation) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
 	var errBehavior = flag.ContinueOnError
 
 	if iArgs.ExitOnError {
@@ -63,7 +70,7 @@ func (iArgs InvokeArgs) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
 	return settings.Flags.Build(iArgs.Name, errBehavior, opts...)
 }
 
-func (iArgs InvokeArgs) BuildViper(flags *flag.FlagSet, ext string, opts ...settings.ViperFunc) (*viper.Viper, error) {
+func (iArgs Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...settings.ViperFunc) (*viper.Viper, error) {
 	var err error
 	var snek *viper.Viper
 
@@ -84,7 +91,11 @@ func (iArgs InvokeArgs) BuildViper(flags *flag.FlagSet, ext string, opts ...sett
 	return snek, err
 }
 
-func (iArgs InvokeArgs) NewLogger(logconf logging.Config) (logging.Logger, error) {
+// func (invoke Invocation) BuildCommand(opts ...CobraOption) (*cobra.Command, error) {
+// 	return nil, nil
+// }
+
+func (iArgs Invocation) NewLogger(logconf logging.Config) (logging.Logger, error) {
 	if log, err := logging.NewZapLogger(logconf); err != nil {
 		return log, err
 	} else if log == nil {
@@ -94,12 +105,12 @@ func (iArgs InvokeArgs) NewLogger(logconf logging.Config) (logging.Logger, error
 	}
 }
 
-func (iArgs InvokeArgs) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) error {
+func (iArgs Invocation) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) error {
 	settings.Flags.IgnoreUnknown(ignoreUnknown)(flags)
 	return flags.Parse(iArgs.Args)
 }
 
-func (iArgs InvokeArgs) defaultFlagFuncs() []settings.FlagFunc {
+func (iArgs Invocation) defaultFlagFuncs() []settings.FlagFunc {
 	// TODO: add a version option and help option if needed
 
 	return []settings.FlagFunc{
@@ -156,7 +167,7 @@ func (iArgs InvokeArgs) defaultFlagFuncs() []settings.FlagFunc {
 	}
 }
 
-func (iArgs InvokeArgs) defaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
+func (iArgs Invocation) defaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
 	var err error
 	var opts = []settings.ViperFunc{
 		settings.Viper.Name(iArgs.Name),

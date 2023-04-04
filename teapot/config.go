@@ -7,10 +7,11 @@ import (
 
 // TODO: is this a use-case for functional options? seemse like it might be
 // since there's quite a few things that could be specified for http client
-// type Config struct {
-// 	Client Client `mapstructure:"client" json:"client"`
-// 	Server Server `mapstructure:"server" json:"server"`
-// }
+
+type Config struct {
+	Client ClientConfig `mapstructure:"client" json:"client"`
+	Server ServerConfig `mapstructure:"server" json:"server"`
+}
 
 type ClientConfig struct {
 	UserAgent             string        `mapstructure:"user_agent" json:"user_agent"`
@@ -26,8 +27,6 @@ type ClientConfig struct {
 	MaxIdleConnsPerHost   int           `mapstructure:"max_idle_conns_per_host" json:"max_idle_conns_per_host"`
 	MaxConnsPerHost       int           `mapstructure:"max_conns_per_host" json:"max_conns_per_host"`
 }
-// TODO: untangle aliases
-type Config = ClientConfig
 
 type ServerConfig struct {
 	Bindport     int           `mapstructure:"bind_port" json:"bind_port"`
