@@ -11,7 +11,6 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"gadget/config"
 	"gadget/halt"
 	"gadget/logging"
 	"gadget/settings"
@@ -64,7 +63,7 @@ func (iArgs Invocation) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
 		errBehavior = flag.ExitOnError
 	}
 	if len(opts) == 0 {
-		opts = iArgs.defaultFlagFuncs()
+		opts = iArgs.DefaultFlagFuncs()
 	}
 
 	return settings.Flags.Build(iArgs.Name, errBehavior, opts...)
@@ -75,7 +74,7 @@ func (iArgs Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...sett
 	var snek *viper.Viper
 
 	if len(opts) == 0 {
-		if opts, err = iArgs.defaultViperFuncs(flags, ext); err != nil {
+		if opts, err = iArgs.DefaultViperFuncs(flags, ext); err != nil {
 			return snek, err
 		}
 	}
@@ -110,18 +109,18 @@ func (iArgs Invocation) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) erro
 	return flags.Parse(iArgs.Args)
 }
 
-func (iArgs Invocation) defaultFlagFuncs() []settings.FlagFunc {
+func (iArgs Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 	// TODO: add a version option and help option if needed
 
 	return []settings.FlagFunc{
 		settings.Flags.Sort(false),
 		settings.Flags.IgnoreUnknown(false),
-		settings.Flags.StringOption(config.KeyConfigPath, "", config.HelpConfigPath),
-		settings.Flags.StringOption(config.KeyEnvPrefix, "", config.HelpEnvPrefix),
-		settings.Flags.StringOption(config.KeyProfileMode, "", config.HelpProfileMode),
-		settings.Flags.StringOption(config.KeyVerbosity, config.DefaultVerbosity, config.HelpVerbosity),
-		settings.Flags.BoolOption(config.KeyDebug, config.DefaultDebug, config.HelpDebug),
-		settings.Flags.BoolOption(config.KeyForce, config.DefaultForce, config.HelpForce),
+		settings.Flags.StringOption(settings.KeyConfigPath, "", settings.HelpConfigPath),
+		settings.Flags.StringOption(settings.KeyEnvPrefix, "", settings.HelpEnvPrefix),
+		settings.Flags.StringOption(settings.KeyProfileMode, "", settings.HelpProfileMode),
+		settings.Flags.StringOption(settings.KeyVerbosity, settings.DefaultVerbosity, settings.HelpVerbosity),
+		settings.Flags.BoolOption(settings.KeyDebug, settings.DefaultDebug, settings.HelpDebug),
+		settings.Flags.BoolOption(settings.KeyForce, settings.DefaultForce, settings.HelpForce),
 		// func(flags *flag.FlagSet) {
 		// 	flags.String(KeyLogLevel, defaultLogLevel, helpLogLevel)
 		// 	flags.String(KeyLogFormat, defaultLogFormat, helpLogFormat)
@@ -167,7 +166,7 @@ func (iArgs Invocation) defaultFlagFuncs() []settings.FlagFunc {
 	}
 }
 
-func (iArgs Invocation) defaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
+func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
 	var err error
 	var opts = []settings.ViperFunc{
 		settings.Viper.Name(iArgs.Name),
@@ -184,10 +183,10 @@ func (iArgs Invocation) defaultViperFuncs(flags *flag.FlagSet, confType string) 
 		var envPrefix string
 
 		if flags.Parsed() {
-			if configPath, err = flags.GetString(config.KeyConfigPath); err != nil {
+			if configPath, err = flags.GetString(settings.KeyConfigPath); err != nil {
 				return nil, err
 			}
-			if envPrefix, err = flags.GetString(config.KeyEnvPrefix); err != nil {
+			if envPrefix, err = flags.GetString(settings.KeyEnvPrefix); err != nil {
 				return nil, err
 			}
 		} else {
@@ -200,15 +199,15 @@ func (iArgs Invocation) defaultViperFuncs(flags *flag.FlagSet, confType string) 
 					return nil, err
 				}
 			}
-			if configPath, err = useFlags.GetString(config.KeyConfigPath); err != nil {
+			if configPath, err = useFlags.GetString(settings.KeyConfigPath); err != nil {
 				return nil, err
 			}
-			if envPrefix, err = useFlags.GetString(config.KeyEnvPrefix); err != nil {
+			if envPrefix, err = useFlags.GetString(settings.KeyEnvPrefix); err != nil {
 				return nil, err
 			}
 		}
 
-		opts = append(opts, settings.Viper.BindPFlags(flags, config.DefaultPFlagsXform))
+		opts = append(opts, settings.Viper.BindPFlags(flags, settings.DefaultPFlagsXform))
 
 		// config file specified on the command line overrides defaults
 		if configPath != "" {
@@ -216,7 +215,7 @@ func (iArgs Invocation) defaultViperFuncs(flags *flag.FlagSet, confType string) 
 			// ignore any other paths added for config.
 			opts = append(opts, settings.Viper.ConfigFile(configPath))
 		} else {
-			opts = append(opts, settings.Viper.ConfigPath(config.DefaultConfigDir(iArgs.Name)))
+			opts = append(opts, settings.Viper.ConfigPath(settings.DefaultConfigDir(iArgs.Name)))
 		}
 
 		if envPrefix != "" {

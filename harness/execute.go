@@ -16,6 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"gadget/exec"
+	"gadget/logging"
 	"gadget/settings"
 )
 
@@ -42,7 +43,7 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 	}()
 
 	if program, err = initialize(invokeArgs); err != nil {
-		LogFatalf(invokeArgs.ExitCodeError, fmt.Sprintf("%v", err))
+		logging.Fatalf(invokeArgs.ExitCodeError, fmt.Sprintf("%v", err))
 	}
 
 	if flags := program.Flags(); flags != nil && !invokeArgs.NoParseFlags {
@@ -51,12 +52,12 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 			if errors.Is(err, flag.ErrHelp) {
 				os.Exit(0)
 			}
-			LogFatalf(invokeArgs.ExitCodeError, "parsing runtime options failed: %v", err)
+			logging.Fatalf(invokeArgs.ExitCodeError, "parsing runtime options failed: %v", err)
 		}
 	}
 
 	if err = program.Load(); err != nil {
-		LogFatalf(invokeArgs.ExitCodeError, "program.Load() failed: %v", err)
+		logging.Fatalf(invokeArgs.ExitCodeError, "program.Load() failed: %v", err)
 	}
 
 	if invokeArgs.HelpOnEmptyArgs && len(invokeArgs.Args) == 0 {
@@ -72,7 +73,7 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 
 	if invokeArgs.CreateMissingConfigFile {
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			LogFatal(invokeArgs.ExitCodeError, fmt.Sprintf("%v", err))
+			logging.Fatal(invokeArgs.ExitCodeError, fmt.Sprintf("%v", err))
 		}
 		// TODO: default config file writing
 		// var createdPath string
@@ -102,7 +103,7 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 	// 	})
 	// 	snek.WatchConfig()
 	// } else if updateConfig != nil && snek == nil {
-	// 	LogFatalf("OnConfigChange() specified but Viper instance is nil")
+	// 	logging.Fatalf("OnConfigChange() specified but Viper instance is nil")
 	// }
 
 	switch program.ProfileMode() {
@@ -137,7 +138,7 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 		return runerr
 	})
 	if err = g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		LogFatalf(invokeArgs.ExitCodeError, "%v", err)
+		logging.Fatalf(invokeArgs.ExitCodeError, "%v", err)
 		os.Exit(invokeArgs.ExitCodeError)
 	}
 }

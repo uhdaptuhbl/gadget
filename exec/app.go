@@ -58,7 +58,7 @@ type Application interface {
 
 	// Load should load the application configuration.
 	// It should have access to the cmd and args via the invocation
-	Load() error
+	Load(cmd *cobra.Command, args []string) error
 
 	// ProfileMode returns the string representation of the profiling mode.
 	ProfileMode() string
@@ -68,9 +68,9 @@ type Application interface {
 // ApplicationBase can be embedded in your Application struct to avoid having to reimplement functions not used.
 type ApplicationBase struct{}
 
-func (app *ApplicationBase) Command() *cobra.Command { return nil }
-func (app *ApplicationBase) Load() error             { return nil }
-func (app *ApplicationBase) ProfileMode() string     { return "" }
+func (app *ApplicationBase) Command() *cobra.Command                      { return nil }
+func (app *ApplicationBase) Load(cmd *cobra.Command, args []string) error { return nil }
+func (app *ApplicationBase) ProfileMode() string                          { return "" }
 func (app *ApplicationBase) HandleSignals(ctx context.Context, cancel context.CancelFunc, sigch chan os.Signal) error {
 	signal.Notify(sigch, syscall.SIGHUP, syscall.SIGTERM, os.Interrupt)
 

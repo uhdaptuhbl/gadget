@@ -1,4 +1,4 @@
-package config
+package settings
 
 import (
 	"strings"
@@ -13,9 +13,9 @@ const KeyVerbosity = "verbosity"
 const KeyDebug = "debug"
 const KeyForce = "force"
 
-// const KeyLogLevel = "loglevel"
-// const KeyLogFormat = "logformat"
-// const KeyLogOutput = "logoutput"
+const KeyLogLevel = "loglevel"
+const KeyLogFormat = "logformat"
+const KeyLogOutput = "logoutput"
 
 const HelpConfigPath = "Specify `<path>` to config file."
 const HelpEnvPrefix = "Set a `<prefix>` for environment variables."
@@ -26,26 +26,26 @@ var HelpVerbosity = "Set `<verbosity>` of output: {" + logging.PrettyLogVerbosit
 const HelpDebug = "Enable debug output."
 const HelpForce = "Perform potentially destructive actions."
 
-// const HelpLogLevel = "minimum logging level"
-// const HelpLogFormat = "logging format"
-// const HelpLogOutput = "logging output file paths"
+const HelpLogLevel = "minimum logging level"
+const HelpLogFormat = "logging format"
+const HelpLogOutput = "logging output file paths"
 
 var DefaultDebug = false
 var DefaultForce = false
 var DefaultVerbosity = string(logging.LogVerbositySimple)
 
-// var DefaultLogLevel = string(logging.LogLevelInfo)
-// var DefaultLogFormat = string(logging.LogFormatJSON)
-// var DefaultLogOutputs = []string{"stdout"}
+var DefaultLogLevel = string(logging.LogLevelInfo)
+var DefaultLogFormat = string(logging.LogFormatJSON)
+var DefaultLogOutputs = []string{"stdout"}
 
 var DefaultPFlagsXform = map[string]string{
 	KeyConfigPath:  "",
 	KeyEnvPrefix:   "",
 	KeyProfileMode: "profile_mode",
 	KeyVerbosity:   "logging.verbosity",
-	// KeyLogLevel:     "logging.level",
-	// KeyLogFormat:    "logging.format",
-	// KeyLogOutput:    "logging.outputpaths",
+	KeyLogLevel:    "logging.level",
+	KeyLogFormat:   "logging.format",
+	KeyLogOutput:   "logging.outputpaths",
 }
 
 const ProfileCPU = "cpu"

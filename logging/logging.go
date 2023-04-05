@@ -1,4 +1,4 @@
-package harness
+package logging
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 // FormatMessage is a utility for log messages prior to instantiating a logger.
@@ -14,7 +15,7 @@ func FormatMessage(level string, msg string) string {
 	_, fn, lineNo, _ := runtime.Caller(2)
 	return fmt.Sprintf(
 		"%s\t%s\t%s:%d\t%s",
-		UTCnowRFC3339(),
+		time.Now().UTC().Format(time.RFC3339),
 		level,
 		filepath.Join(filepath.Base(filepath.Dir(fn)), filepath.Base(fn)),
 		lineNo,
@@ -22,25 +23,25 @@ func FormatMessage(level string, msg string) string {
 	)
 }
 
-func LogDebug(msg string) {
+func Debug(msg string) {
 	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("DEBUG", msg) + "\n"))
 }
-func LogDebugf(msg string, args ...interface{}) {
+func Debugf(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("DEBUG", msg) + "\n"), args...)
 }
 
-func LogInfo(msg string) {
+func Info(msg string) {
 	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("INFO", msg) + "\n"))
 }
-func LogInfof(msg string, args ...interface{}) {
+func Infof(msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("INFO", msg) + "\n"), args...)
 }
 
-func LogFatal(exitCode int, msg string) {
+func Fatal(exitCode int, msg string) {
 	_, _ = fmt.Fprint(os.Stderr, (FormatMessage("ERROR", "FATAL: "+msg) + "\n"))
 	os.Exit(exitCode)
 }
-func LogFatalf(exitCode int, msg string, args ...interface{}) {
+func Fatalf(exitCode int, msg string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, (FormatMessage("ERROR", "FATAL: "+msg) + "\n"), args...)
 	os.Exit(exitCode)
 }

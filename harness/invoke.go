@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+
+	"gadget/logging"
 )
 
 // Invoke runs cobra commands along with boilerplate.
@@ -35,11 +37,11 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 	}
 
 	if app, err = initialize(&invoke); err != nil {
-		LogFatalf(invoke.ExitCodeError, "error initializing program: %v", err)
+		logging.Fatalf(invoke.ExitCodeError, "error initializing program: %v", err)
 	}
 
 	if cmd = app.Command(); cmd == nil {
-		LogFatalf(invoke.ExitCodeError, "nil command: %v", app)
+		logging.Fatalf(invoke.ExitCodeError, "nil command: %v", app)
 	}
 
 	// if flags := cmd.Flags(); flags != nil && !invoke.NoParseFlags {
@@ -48,7 +50,7 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 	// 		if errors.Is(err, flag.ErrHelp) {
 	// 			os.Exit(0)
 	// 		}
-	// 		LogFatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
+	// 		logging.Fatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
 	// 	}
 	// }
 
@@ -57,8 +59,8 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 		// but PersistencePreRunE on the root command works well.
 		// NOTE: app.Load() should have access to the cmd and args
 		// from the invocation object it got when initialized.
-		if err = app.Load(); err != nil {
-			LogFatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
+		if err = app.Load(cmd, args); err != nil {
+			logging.Fatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
 		}
 		return nil
 	}
@@ -131,6 +133,6 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 		return runerr
 	})
 	if err = g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		LogFatalf(invoke.ExitCodeError, "%v", err)
+		logging.Fatalf(invoke.ExitCodeError, "%v", err)
 	}
 }

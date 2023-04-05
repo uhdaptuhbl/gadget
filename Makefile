@@ -17,4 +17,5 @@ format:
 	find . -name \*.go -not -path vendor -not -path target -exec goimports -w {} \;
 
 test:
-	$(GOTEST) -v ./...
+# 	$(GOTEST) -v ./...
+	$(GOCMD) run test.go
