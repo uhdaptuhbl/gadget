@@ -54,6 +54,7 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 	// 	}
 	// }
 
+	// https://github.com/carolynvs/stingoftheviper/blob/main/main.go
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		// NOTE: cobra and viper can be bound in a few locations,
 		// but PersistencePreRunE on the root command works well.

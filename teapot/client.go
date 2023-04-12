@@ -145,7 +145,7 @@ type Client struct {
 	userAgent string
 }
 
-func New(conf ClientConfig) *Client {
+func NewClient(conf ClientConfig) *Client {
 	var cl = &Client{
 		userAgent: conf.UserAgent,
 	}
