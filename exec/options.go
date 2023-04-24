@@ -2,6 +2,8 @@ package exec
 
 import (
 	"time"
+
+	"gadget/settings"
 )
 
 // Option applies changes to the provided invocation.
@@ -59,5 +61,11 @@ func WithBuildDate(buildDate string) Option {
 func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
 	return func(invoke *Invocation) {
 		invoke.ShutdownTimeout = shutdownTimeout
+	}
+}
+
+func WithUserDirs(dirs settings.UserDirs) Option {
+	return func(invoke *Invocation) {
+		invoke.UserDirs = dirs
 	}
 }

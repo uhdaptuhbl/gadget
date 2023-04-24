@@ -54,7 +54,7 @@ func (p *ProgramBase) HandleSignals(ctx context.Context, cancel context.CancelFu
 // Application interface provides the API contract for applications.
 type Application interface {
 	// Command should return the root cobra command of the application
-	Command() *cobra.Command
+	Command() (*cobra.Command, error)
 
 	// Load should load the application configuration.
 	// It should have access to the cmd and args via the invocation
@@ -68,7 +68,7 @@ type Application interface {
 // ApplicationBase can be embedded in your Application struct to avoid having to reimplement functions not used.
 type ApplicationBase struct{}
 
-func (app *ApplicationBase) Command() *cobra.Command                      { return nil }
+func (app *ApplicationBase) Command() (*cobra.Command, error)             { return nil, nil }
 func (app *ApplicationBase) Load(cmd *cobra.Command, args []string) error { return nil }
 func (app *ApplicationBase) ProfileMode() string                          { return "" }
 func (app *ApplicationBase) HandleSignals(ctx context.Context, cancel context.CancelFunc, sigch chan os.Signal) error {
