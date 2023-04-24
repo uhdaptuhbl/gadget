@@ -19,6 +19,8 @@ import (
 
 const buildsep = "#"
 
+// TODO: implement default config file writing
+
 // MaxParallelism return conservative number of suggested max parallelism.
 func MaxParallelism() int {
 	var maxProcs = runtime.GOMAXPROCS(0)
@@ -48,33 +50,38 @@ type Invocation struct {
 	ExitCodeError    int
 
 	Sneks sneks.Sneks
+	UserDirs settings.UserDirs
 }
 
-// TODO: implement default config file writing
-
-func (iArgs Invocation) Build() string {
-	return (iArgs.BuildDate + buildsep + iArgs.BuildId)
+func (invk *Invocation) Configure(options ...Option) {
+	for _, option := range options {
+		option(invk)
+	}
 }
 
-func (iArgs Invocation) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
+func (invk *Invocation) Build() string {
+	return (invk.BuildDate + buildsep + invk.BuildId)
+}
+
+func (invk *Invocation) BuildFlags(opts ...settings.FlagFunc) *flag.FlagSet {
 	var errBehavior = flag.ContinueOnError
 
-	if iArgs.ExitOnError {
+	if invk.ExitOnError {
 		errBehavior = flag.ExitOnError
 	}
 	if len(opts) == 0 {
-		opts = iArgs.DefaultFlagFuncs()
+		opts = invk.DefaultFlagFuncs()
 	}
 
-	return settings.Flags.Build(iArgs.Name, errBehavior, opts...)
+	return settings.Flags.Build(invk.Name, errBehavior, opts...)
 }
 
-func (iArgs Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...settings.ViperFunc) (*viper.Viper, error) {
+func (invk *Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...settings.ViperFunc) (*viper.Viper, error) {
 	var err error
 	var snek *viper.Viper
 
 	if len(opts) == 0 {
-		if opts, err = iArgs.DefaultViperFuncs(flags, ext); err != nil {
+		if opts, err = invk.DefaultViperFuncs(flags, ext); err != nil {
 			return snek, err
 		}
 	}
@@ -94,7 +101,7 @@ func (iArgs Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...sett
 // 	return nil, nil
 // }
 
-func (iArgs Invocation) NewLogger(logconf logging.Config) (logging.Logger, error) {
+func (invk *Invocation) NewLogger(logconf logging.Config) (logging.Logger, error) {
 	if log, err := logging.NewZapLogger(logconf); err != nil {
 		return log, err
 	} else if log == nil {
@@ -104,12 +111,12 @@ func (iArgs Invocation) NewLogger(logconf logging.Config) (logging.Logger, error
 	}
 }
 
-func (iArgs Invocation) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) error {
+func (invk *Invocation) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) error {
 	settings.Flags.IgnoreUnknown(ignoreUnknown)(flags)
-	return flags.Parse(iArgs.Args)
+	return flags.Parse(invk.Args)
 }
 
-func (iArgs Invocation) DefaultFlagFuncs() []settings.FlagFunc {
+func (invk *Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 	// TODO: add a version option and help option if needed
 
 	return []settings.FlagFunc{
@@ -118,14 +125,15 @@ func (iArgs Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 		settings.Flags.StringOption(settings.KeyConfigPath, "", settings.HelpConfigPath),
 		settings.Flags.StringOption(settings.KeyEnvPrefix, "", settings.HelpEnvPrefix),
 		settings.Flags.StringOption(settings.KeyProfileMode, "", settings.HelpProfileMode),
-		settings.Flags.StringOption(settings.KeyVerbosity, settings.DefaultVerbosity, settings.HelpVerbosity),
+		settings.Flags.BoolOption(settings.KeyVerbose, settings.DefaultVerbose, settings.HelpVerbose),
 		settings.Flags.BoolOption(settings.KeyDebug, settings.DefaultDebug, settings.HelpDebug),
 		settings.Flags.BoolOption(settings.KeyForce, settings.DefaultForce, settings.HelpForce),
-		// func(flags *flag.FlagSet) {
-		// 	flags.String(KeyLogLevel, defaultLogLevel, helpLogLevel)
-		// 	flags.String(KeyLogFormat, defaultLogFormat, helpLogFormat)
-		// 	flags.StringSlice(KeyLogOutput, defaultLogOutputs, helpLogOutput)
-		// },
+		func(flags *flag.FlagSet) {
+			flags.String(settings.KeyLogFormat, settings.DefaultLogFormat, settings.HelpLogFormat)
+			flags.String(settings.KeyLogLevel, settings.DefaultLogLevel, settings.HelpLogLevel)
+			flags.String(settings.KeyLogVerbosity, settings.DefaultLogVerbosity, settings.HelpLogVerbosity)
+			flags.StringSlice(settings.KeyLogOutput, settings.DefaultLogOutputs, settings.HelpLogOutput)
+		},
 		settings.Flags.Usage(func(flags *flag.FlagSet) {
 			var subcommands []string
 
@@ -136,9 +144,9 @@ func (iArgs Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 			var dest = os.Stderr
 
 			var sep = "  "
-			var name = iArgs.Name
-			var ver = iArgs.Version
-			var build = iArgs.Build()
+			var name = invk.Name
+			var ver = invk.Version
+			var build = invk.Build()
 
 			if len(ver) > 0 && ver[0] == 'v' && ver[:2] != "ver" {
 				ver = ver[1:]
@@ -166,11 +174,11 @@ func (iArgs Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 	}
 }
 
-func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
+func (invk *Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) ([]settings.ViperFunc, error) {
 	var err error
 	var opts = []settings.ViperFunc{
-		settings.Viper.Name(iArgs.Name),
-		settings.Viper.ConfigName(iArgs.Name),
+		settings.Viper.Name(invk.Name),
+		settings.Viper.ConfigName(invk.Name),
 		settings.Viper.ConfigPath("."),
 	}
 	if confType != "" {
@@ -194,7 +202,7 @@ func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) 
 			var concrete = *flags
 			useFlags = &concrete
 			settings.Flags.IgnoreUnknown(true)(useFlags)
-			if err = iArgs.ParseFlags(useFlags, true); err != nil {
+			if err = invk.ParseFlags(useFlags, true); err != nil {
 				if !errors.Is(err, flag.ErrHelp) {
 					return nil, err
 				}
@@ -215,7 +223,7 @@ func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) 
 			// ignore any other paths added for config.
 			opts = append(opts, settings.Viper.ConfigFile(configPath))
 		} else {
-			opts = append(opts, settings.Viper.ConfigPath(settings.DefaultConfigDir(iArgs.Name)))
+			opts = append(opts, settings.Viper.ConfigPath(settings.DefaultConfigDir(invk.Name)))
 		}
 
 		if envPrefix != "" {

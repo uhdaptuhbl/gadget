@@ -107,14 +107,15 @@ func (iArgs InvokeArgs) defaultFlagFuncs() []settings.FlagFunc {
 		settings.Flags.StringOption(settings.KeyConfigPath, "", settings.HelpConfigPath),
 		settings.Flags.StringOption(settings.KeyEnvPrefix, "", settings.HelpEnvPrefix),
 		settings.Flags.StringOption(settings.KeyProfileMode, "", settings.HelpProfileMode),
-		settings.Flags.StringOption(settings.KeyVerbosity, settings.DefaultVerbosity, settings.HelpVerbosity),
+		settings.Flags.BoolOption(settings.KeyVerbose, settings.DefaultVerbose, settings.HelpVerbose),
 		settings.Flags.BoolOption(settings.KeyDebug, settings.DefaultDebug, settings.HelpDebug),
 		settings.Flags.BoolOption(settings.KeyForce, settings.DefaultForce, settings.HelpForce),
-		// func(flags *flag.FlagSet) {
-		// 	flags.String(KeyLogLevel, defaultLogLevel, helpLogLevel)
-		// 	flags.String(KeyLogFormat, defaultLogFormat, helpLogFormat)
-		// 	flags.StringSlice(KeyLogOutput, defaultLogOutputs, helpLogOutput)
-		// },
+		func(flags *flag.FlagSet) {
+			flags.String(settings.KeyLogFormat, settings.DefaultLogFormat, settings.HelpLogFormat)
+			flags.String(settings.KeyLogLevel, settings.DefaultLogLevel, settings.HelpLogLevel)
+			flags.String(settings.KeyLogVerbosity, settings.DefaultLogVerbosity, settings.HelpLogVerbosity)
+			flags.StringSlice(settings.KeyLogOutput, settings.DefaultLogOutputs, settings.HelpLogOutput)
+		},
 		settings.Flags.Usage(func(flags *flag.FlagSet) {
 			var subcommands []string
 

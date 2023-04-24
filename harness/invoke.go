@@ -13,12 +13,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"gadget/logging"
+	"gadget/settings"
 )
 
 // Invoke runs cobra commands along with boilerplate.
 func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options ...exec.Option) {
 	var err error
-	var invoke exec.Invocation
 	var app exec.Application
 	var cmd *cobra.Command
 
@@ -32,73 +32,23 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 		}
 	}()
 
+	var invoke = new(exec.Invocation)
 	for _, option := range options {
-		option(&invoke)
+		option(invoke)
+	}
+	if dirs, err := settings.GetUserDirs(invoke.Name); err != nil {
+		logging.Fatalf(invoke.ExitCodeError, "unable to get user directories: %v", err)
+	} else {
+		invoke.Configure(exec.WithUserDirs(dirs))
 	}
 
-	if app, err = initialize(&invoke); err != nil {
+	if app, err = initialize(invoke); err != nil {
 		logging.Fatalf(invoke.ExitCodeError, "error initializing program: %v", err)
 	}
 
-	if cmd = app.Command(); cmd == nil {
-		logging.Fatalf(invoke.ExitCodeError, "nil command: %v", app)
+	if cmd, err = app.Command(); cmd == nil || err != nil {
+		logging.Fatalf(invoke.ExitCodeError, "command init: %v", app)
 	}
-
-	// if flags := cmd.Flags(); flags != nil && !invoke.NoParseFlags {
-	// 	settings.Flags.IgnoreUnknown(false)(flags)
-	// 	if err = flags.Parse(invoke.Args); err != nil {
-	// 		if errors.Is(err, flag.ErrHelp) {
-	// 			os.Exit(0)
-	// 		}
-	// 		logging.Fatalf(invoke.ExitCodeError, "parsing runtime options failed: %v", err)
-	// 	}
-	// }
-
-	// https://github.com/carolynvs/stingoftheviper/blob/main/main.go
-	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		// NOTE: cobra and viper can be bound in a few locations,
-		// but PersistencePreRunE on the root command works well.
-		// NOTE: app.Load() should have access to the cmd and args
-		// from the invocation object it got when initialized.
-		if err = app.Load(cmd, args); err != nil {
-			logging.Fatalf(invoke.ExitCodeError, "app.Load() failed: %v", err)
-		}
-		return nil
-	}
-
-	// if invoke.HelpOnEmptyArgs && len(invoke.Args) == 0 {
-	// 	if flags := app.Flags(); flags != nil {
-	// 		if flags.Usage != nil {
-	// 			flags.Usage()
-	// 		} else {
-	// 			flags.PrintDefaults()
-	// 		}
-	// 	}
-	// 	os.Exit(0)
-	// }
-
-	// if invoke.CreateMissingConfigFile {
-	// 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-	// 		LogFatal(invoke.ExitCodeError, fmt.Sprintf("%v", err))
-	// 	}
-	// 	// TODO: default config file writing
-	// 	// var createdPath string
-	// 	// if createdPath, err = config.WriteDefaultConfigFile(); err != nil {
-	// 	// 	if !errors.Is(err, os.ErrExist) {
-	// 	// 		LogFatal(fmt.Sprintf("%v", err))
-	// 	// 	}
-	// 	// }
-	// 	// if errors.Is(err, os.ErrExist) {
-	// 	// 	LogInfof("config path already exists: %s", createdPath)
-	// 	// } else {
-	// 	// 	LogInfof("created config file: %s", createdPath)
-	// 	// }
-
-	// 	// // this can still error if --config is specified and is different from default
-	// 	// if err = conf.Load(); err != nil {
-	// 	// 	LogFatal(fmt.Sprintf("%v", err))
-	// 	// }
-	// }
 
 	switch app.ProfileMode() {
 	case "cpu":
@@ -127,6 +77,22 @@ func Invoke(initialize func(*exec.Invocation) (exec.Application, error), options
 		// TODO: is this the right way to go about terminating the signal
 		// handler? Would it be more idiomatic to close the channel if that works?
 		defer cancel()
+
+		// https://github.com/carolynvs/stingoftheviper/blob/main/main.go
+		var ppre = cmd.PersistentPreRun
+		cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+			// NOTE: cobra and viper can be bound in a few locations,
+			// but PersistencePreRunE on the root command works well.
+			// NOTE: app.Load() should have access to the cmd and args
+			// from the invocation object it got when initialized.
+			if err = app.Load(cmd, args); err != nil {
+				logging.Fatalf(invoke.ExitCodeError, "Load() failed: %v", err)
+			}
+
+			if ppre != nil {
+				ppre(cmd, args)
+			}
+		}
 
 		if runerr = cmd.ExecuteContext(gctx); runerr != nil {
 			runerr = errors.Wrap(runerr, "app.Run()")

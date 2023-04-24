@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 /*
@@ -29,6 +30,78 @@ func DefaultConfigDir(appName string) string {
 	}
 
 	return dir
+}
+
+type NamespaceError struct {
+	Namespace string
+	Problem string
+}
+
+func (e *NamespaceError) Error() string {
+	var msg strings.Builder
+
+	if e.Namespace != "" {
+		msg.WriteString("namespace: " + e.Namespace)
+	}
+	if e.Problem != "" {
+		if e.Namespace != "" {
+			msg.WriteString("; ")
+		}
+		msg.WriteString(e.Problem)
+	}
+
+	return msg.String()
+}
+
+func GetUserDirs(namespace string) (UserDirs, error) {
+	var err error
+	var dirs UserDirs
+
+	if namespace == "" {
+		return dirs, &NamespaceError{Problem: "empty namespace value"}
+	}
+
+	dirs.Namespace = namespace
+	if dirs.home, err = os.UserHomeDir(); err != nil {
+		return dirs, err
+	}
+	if dirs.cache, err = os.UserCacheDir(); err != nil {
+		return dirs, err
+	}
+	if dirs.config, err = os.UserConfigDir(); err != nil {
+		return dirs, err
+	}
+
+	return dirs, err
+}
+
+type UserDirs struct {
+	Namespace string
+
+	home string
+	cache string
+	config string
+}
+
+func (dirs UserDirs) Home() string {
+	if dirs.Namespace != "" {
+		return filepath.Join(dirs.home, dirs.Namespace)
+	}
+	return dirs.home
+}
+
+func (dirs UserDirs) Cache() string {
+	if dirs.Namespace != "" {
+		return filepath.Join(dirs.cache, dirs.Namespace)
+	}
+	return dirs.cache
+}
+
+func (dirs UserDirs) Config() string {
+	if dirs.Namespace != "" {
+		return filepath.Join(dirs.config, dirs.Namespace)
+	}
+	return dirs.config
 }
 
 /*
