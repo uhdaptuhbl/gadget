@@ -49,7 +49,7 @@ type Invocation struct {
 	ExitOnError      bool
 	ExitCodeError    int
 
-	Sneks sneks.Sneks
+	Sneks    sneks.Sneks
 	UserDirs settings.UserDirs
 }
 

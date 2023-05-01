@@ -34,7 +34,7 @@ func DefaultConfigDir(appName string) string {
 
 type NamespaceError struct {
 	Namespace string
-	Problem string
+	Problem   string
 }
 
 func (e *NamespaceError) Error() string {
@@ -78,8 +78,8 @@ func GetUserDirs(namespace string) (UserDirs, error) {
 type UserDirs struct {
 	Namespace string
 
-	home string
-	cache string
+	home   string
+	cache  string
 	config string
 }
 
