@@ -1,7 +1,5 @@
 # Logging
 
-The standard Logging interface for voltron packages.
-
 ## Implementations
 
 ### NOP
@@ -19,8 +17,3 @@ Usage:
 ```go
 logger := logging.NewZapLogger()
 ```
-
-## Custom Loggers
-Situations will arise that require a custom logger. Voltron packages require acceptance of the logging.Logger interface.
-This means that whenever there is a requirement for custom logging all one needs to do is implement the logging.Logger
-interface.

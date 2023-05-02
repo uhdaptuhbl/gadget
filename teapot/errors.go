@@ -1,4 +1,4 @@
-package teacup
+package teapot
 
 import (
 	"fmt"

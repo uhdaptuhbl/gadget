@@ -3,6 +3,7 @@ module gadget
 go 1.20
 
 require (
+	github.com/carlmjohnson/requests v0.23.3
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0

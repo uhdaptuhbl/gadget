@@ -1,4 +1,4 @@
-package teacup
+package teapot
 
 import (
 	"encoding/json"
@@ -7,6 +7,17 @@ import (
 	"net/url"
 	"strings"
 )
+
+func CopyHeaders(dst http.Header, src http.Header, overwrite bool) {
+	for h, vals := range src {
+		if overwrite {
+			dst.Del(h)
+		}
+		for _, val := range vals {
+			dst.Add(h, val)
+		}
+	}
+}
 
 // Result provides info to the caller about the request, response, and content.
 //
@@ -78,7 +89,33 @@ func (res *Result) JSON(dest any) error {
 	return json.Unmarshal(res.Body, dest)
 }
 
-func (res *Result) Dump(logfunc func(string, ...any), msg string) {
+func (res *Result) Dump() string {
+	// fmt.Sprintf("\nREQUEST: %+v\nRESPONSE: %+v\nBODY: %s", res.Response, res.Request, res.Body)
+	var dump strings.Builder
+	if res.Request != nil {
+		// dump.WriteString("\nREQUEST: " + res.Request.URL.String() + "\n" + res.Request.Method)
+
+		dump.WriteString("\n" + res.Response.Proto)
+		dump.WriteString("\n" + res.Request.Method + " " + res.Request.URL.String())
+		for header, values := range res.Request.Header {
+			dump.WriteString("\n\t" + header + ": " + fmt.Sprintf("%v", values))
+		}
+	}
+	if res.Response != nil {
+		// dump.WriteString("\nRESPONSE: " + fmt.Sprintf("%+v", res.Response) + "\n")
+
+		dump.WriteString("\n" + res.Response.Proto)
+		dump.WriteString("\n" + res.Response.Status)
+		dump.WriteString(" " + res.Response.Request.URL.String())
+		for header, values := range res.Response.Header {
+			dump.WriteString("\n\t" + header + ": " + fmt.Sprintf("%v", values))
+		}
+	}
+	dump.WriteString(fmt.Sprintf("\nBODY: %d bytes", len(res.Body)))
+	return dump.String()
+}
+
+func (res *Result) DumpLog(logfunc func(string, ...any), msg string) {
 	logfunc(
 		msg,
 		"request",

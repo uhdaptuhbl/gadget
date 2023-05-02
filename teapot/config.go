@@ -1,4 +1,4 @@
-package teacup
+package teapot
 
 import (
 	"crypto/tls"
@@ -6,7 +6,15 @@ import (
 	"time"
 )
 
-const DefaultUserAgent = "teacup/v0.1.0"
+type Config struct {
+	Bindport     int           `mapstructure:"bind_port" json:"bind_port"`
+	BindAddress  string        `mapstructure:"bind_address" json:"bind_address"`
+	CAPath       string        `mapstructure:"capath" json:"capath"`
+	CertPath     string        `mapstructure:"certpath" json:"certpath"`
+	KeyPath      string        `mapstructure:"keypath" json:"keypath"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout" json:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout" json:"write_timeout"`
+}
 
 // TLSConfig mirrors most of the tls.Config struct but with tags and serializable.
 //
@@ -33,6 +41,14 @@ type TLSConfig struct {
 	MinVersion uint16 `mapstructure:"min_version" json:"min_version,omitempty"`
 }
 
+func (cfg TLSConfig) Construct() *tls.Config {
+	var config = new(tls.Config)
+	cfg.Apply(config)
+
+	return config
+}
+
+// Apply will update a `*tls.Config`.
 func (cfg TLSConfig) Apply(config *tls.Config) {
 	if config == nil {
 		return
@@ -136,6 +152,13 @@ type TransportConfig struct {
 	// when reading from the transport.
 	// If zero, a default (currently 4KB) is used.
 	ReadBufferSize int
+}
+
+func (cfg TransportConfig) Construct() *http.Transport {
+	var config = new(http.Transport)
+	cfg.Apply(config)
+
+	return config
 }
 
 func (cfg TransportConfig) Apply(transport *http.Transport) {
