@@ -12,11 +12,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const DefaultUserAgent = "teapot"
-
-type RequestInterceptor func(request *http.Request) error
-type ResponseInterceptor func(request *http.Response) error
-
 // Teapot contains all of the metadata needed to construct a Session.
 //
 // TODO: initialization from viper instance instead of config
@@ -61,21 +56,21 @@ type Teapot struct {
 func (teapot *Teapot) Clone() *Teapot {
 	var clone = &Teapot{
 		// UserAgentFunc: teapot.UserAgentFunc,
-		NoCookieJar:   teapot.NoCookieJar,
-		Timeout:       teapot.Timeout,
-		Transport:     teapot.Transport,
-		TLS:           teapot.TLS,
+		NoCookieJar: teapot.NoCookieJar,
+		Timeout:     teapot.Timeout,
+		Transport:   teapot.Transport,
+		TLS:         teapot.TLS,
 
-		onRequest:     append(make([]RequestInterceptor, 0, len(teapot.onRequest)), teapot.onRequest...),
-		onResponse:    append(make([]ResponseInterceptor, 0, len(teapot.onResponse)), teapot.onResponse...),
-		httpclient:    teapot.httpclient,
-		transport:     func() *http.Transport {
+		onRequest:  append(make([]RequestInterceptor, 0, len(teapot.onRequest)), teapot.onRequest...),
+		onResponse: append(make([]ResponseInterceptor, 0, len(teapot.onResponse)), teapot.onResponse...),
+		httpclient: teapot.httpclient,
+		transport: func() *http.Transport {
 			if teapot.transport != nil {
 				return teapot.transport.Clone()
 			}
 			return nil
 		}(),
-		tlsconfig:     func() *tls.Config {
+		tlsconfig: func() *tls.Config {
 			if teapot.tlsconfig != nil {
 				return teapot.tlsconfig.Clone()
 			}
@@ -87,16 +82,12 @@ func (teapot *Teapot) Clone() *Teapot {
 }
 
 func (teapot *Teapot) OnRequest(handlers ...RequestInterceptor) *Teapot {
-	for _, h := range handlers {
-		teapot.onRequest = append(teapot.onRequest, h)
-	}
+	teapot.onRequest = append(teapot.onRequest, handlers...)
 	return teapot
 }
 
 func (teapot *Teapot) OnResponse(handlers ...ResponseInterceptor) *Teapot {
-	for _, h := range handlers {
-		teapot.onResponse = append(teapot.onResponse, h)
-	}
+	teapot.onResponse = append(teapot.onResponse, handlers...)
 	return teapot
 }
 
