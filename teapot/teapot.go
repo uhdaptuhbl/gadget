@@ -2,14 +2,10 @@ package teapot
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 	"time"
 
-	// "github.com/carlmjohnson/requests"
-	// "github.com/hashicorp/go-retryablehttp"
-	"golang.org/x/net/publicsuffix"
+	"gadget/teapot/cookiejar"
 )
 
 // Teapot contains all of the metadata needed to construct a Session.
@@ -17,9 +13,9 @@ import (
 // TODO: initialization from viper instance instead of config
 // TODO: add json, toml, yaml, mapstructure, validate tags
 type Teapot struct {
-	// Headers indicates which HTTP headers should be sent and with
+	// Header indicates which HTTP headers should be sent and with
 	// what values with every request made by the Session.
-	Headers http.Header `mapstructure:"headers" json:"headers,omitempty"`
+	Header http.Header `mapstructure:"headers" json:"headers,omitempty"`
 
 	// NoCookieJar disables Session cookies when set to true.
 	NoCookieJar bool `mapstructure:"no_cookie_jar" json:"no_cookie_jar,omitempty"`
@@ -44,8 +40,8 @@ type Teapot struct {
 	onResponse []ResponseInterceptor
 	transport  *http.Transport
 	tlsconfig  *tls.Config
-	cookiejar  *cookiejar.Jar
 	httpclient *http.Client
+	cookiejar  http.CookieJar
 
 	// UserAgent provides a convenience way to specify the User-Agent
 	// HTTP header without needing to specify other headers.
@@ -53,9 +49,14 @@ type Teapot struct {
 	// UserAgentFunc func() string `mapstructure:"-" json:"-"`
 }
 
+func New() *Teapot {
+	return &Teapot{Header: make(http.Header)}
+}
+
 func (teapot *Teapot) Clone() *Teapot {
 	var clone = &Teapot{
 		// UserAgentFunc: teapot.UserAgentFunc,
+		Header:      make(http.Header),
 		NoCookieJar: teapot.NoCookieJar,
 		Timeout:     teapot.Timeout,
 		Transport:   teapot.Transport,
@@ -63,7 +64,6 @@ func (teapot *Teapot) Clone() *Teapot {
 
 		onRequest:  append(make([]RequestInterceptor, 0, len(teapot.onRequest)), teapot.onRequest...),
 		onResponse: append(make([]ResponseInterceptor, 0, len(teapot.onResponse)), teapot.onResponse...),
-		httpclient: teapot.httpclient,
 		transport: func() *http.Transport {
 			if teapot.transport != nil {
 				return teapot.transport.Clone()
@@ -76,6 +76,8 @@ func (teapot *Teapot) Clone() *Teapot {
 			}
 			return nil
 		}(),
+		httpclient: teapot.httpclient,
+		cookiejar: teapot.cookiejar,
 	}
 
 	return clone
@@ -101,28 +103,28 @@ func (teapot *Teapot) WithTLS(tlsconfig *tls.Config) *Teapot {
 	return teapot
 }
 
-func (teapot *Teapot) WithCookieJar(jar *cookiejar.Jar) *Teapot {
+func (teapot *Teapot) WithCookieJar(jar http.CookieJar) *Teapot {
 	teapot.cookiejar = jar
 	return teapot
 }
 
 func (teapot *Teapot) Session() Session {
-	if teapot.Headers == nil {
-		teapot.Headers = make(http.Header)
+	if teapot.Header == nil {
+		teapot.Header = make(http.Header)
 	}
 
-	// if _, ok := teapot.Headers[http.CanonicalHeaderKey("User-Agent")]; ok {
+	// if _, ok := teapot.Header[http.CanonicalHeaderKey("User-Agent")]; ok {
 	// 	if teapot.UserAgent == "" {
-	// 		teapot.UserAgent = teapot.Headers.Get("User-Agent")
-	// 	} else if teapot.UserAgent != teapot.Headers.Get("User-Agent") {
-	// 		teapot.Headers.Set("User-Agent", teapot.UserAgent)
+	// 		teapot.UserAgent = teapot.Header.Get("User-Agent")
+	// 	} else if teapot.UserAgent != teapot.Header.Get("User-Agent") {
+	// 		teapot.Header.Set("User-Agent", teapot.UserAgent)
 	// 	}
 	// } else {
 	// 	if teapot.UserAgent == "" {
 	// 		teapot.UserAgent = DefaultUserAgent
-	// 		teapot.Headers.Set("User-Agent", DefaultUserAgent)
+	// 		teapot.Header.Set("User-Agent", DefaultUserAgent)
 	// 	} else {
-	// 		teapot.Headers.Set("User-Agent", teapot.UserAgent)
+	// 		teapot.Header.Set("User-Agent", teapot.UserAgent)
 	// 	}
 	// }
 
@@ -134,18 +136,11 @@ func (teapot *Teapot) Client() *http.Client {
 
 	if teapot.httpclient == nil {
 		// A new cookie jar is always created for a new client unless disabled.
-		var err error
-		var jar *cookiejar.Jar
-		if !teapot.NoCookieJar {
-			// https://golangbyexample.com/set-cookie-http-golang/
-			// https://husni.dev/manage-http-cookie-in-go-with-cookie-jar/
-			if teapot.cookiejar != nil {
-				jar = teapot.cookiejar
-			} else if jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List}); err != nil {
-				// NOTE: As of Go 1.16, cookiejar.New err is hardcoded nil:
-				// https://cs.opensource.google/go/go/+/refs/tags/go1.20.3:src/net/http/cookiejar/jar.go;l=85
-				panic(fmt.Sprintf("As of Go 1.16, cookiejar.New err is supposed to be hardcoded nil: %v", err))
-			}
+		var jar http.CookieJar
+		if teapot.cookiejar != nil {
+			jar = teapot.cookiejar
+		} else if !teapot.NoCookieJar {
+			jar = cookiejar.New()
 		}
 
 		if teapot.tlsconfig == nil {

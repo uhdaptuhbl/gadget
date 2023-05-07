@@ -31,7 +31,7 @@ type teacup struct {
 }
 
 func NewTeacup(teapot *Teapot) *teacup {
-	return &teacup{teapot: teapot, headers: teapot.Headers, Builder: newBuilder(teapot)}
+	return &teacup{teapot: teapot, headers: teapot.Header, Builder: newBuilder(teapot)}
 }
 
 func (session *teacup) clone() *teacup {
