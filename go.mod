@@ -8,7 +8,7 @@ replace gorm.io/driver/sqlite => gorm.io/driver/sqlite v1.4.4
 require (
 	github.com/carlmjohnson/requests v0.23.3
 	github.com/corpix/uarand v0.2.0
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
@@ -18,7 +18,7 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.9.0
 	golang.org/x/sync v0.2.0
-	gorm.io/driver/sqlite v1.5.0
+	gorm.io/driver/sqlite v0.0.0-00010101000000-000000000000
 	gorm.io/gorm v1.25.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-sqlite3 v1.14.15 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/spf13/afero v1.9.5 // indirect

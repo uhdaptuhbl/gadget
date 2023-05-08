@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+type ErrorChannel chan error
+type ErrorHandler func(err error) bool
+
 type NoCookiesFoundError struct {
 	Hosts []string
 }

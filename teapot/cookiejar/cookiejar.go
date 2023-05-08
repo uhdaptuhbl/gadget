@@ -3,12 +3,10 @@ package cookiejar
 import (
 	"fmt"
 	"net/http"
-	stdjar "net/http/cookiejar"
 	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/publicsuffix"
 
 	"gadget/logging"
 )
@@ -41,49 +39,27 @@ import (
 // https://golangbyexample.com/set-cookie-http-golang/
 // https://husni.dev/manage-http-cookie-in-go-with-cookie-jar/
 type cookieContainer struct {
-	strict     bool
 	log        logging.Logger
 	data       http.CookieJar
-	nameMap    map[string]string
-	nameLookup map[string]string
+	strict     bool
 
 	// TODO: are these actually useful?
-	errchan    chan error
 	errhandler ErrorHandler
+	errchan    chan error
+
+	nameMap    map[string]string
+	nameLookup map[string]string
 }
 
-// NewcookieContainer constructs a new valid jar.
+// New constructs a valid jar.
 func New(options ...Option) *cookieContainer {
-	var err error
-	var jar = &cookieContainer{
-		nameMap: make(map[string]string),
-		nameLookup: make(map[string]string),
-	}
+	var jar = newCookieContainer()
 
 	for _, option := range options {
 		option(jar)
 	}
 
-	if jar.log == nil {
-		jar.log = logging.NewNoopLogger()
-	} else {
-		jar.log.Debug("cookie jar using provided logger")
-	}
-
-	if jar.errhandler == nil {
-		jar.errhandler = jar.defaultErrorHandler
-	}
-
-	if jar.data == nil {
-		if jar.data, err = stdjar.New(&stdjar.Options{PublicSuffixList: publicsuffix.List}); err != nil {
-			// NOTE: As of Go 1.16, cookiejar.New err is hardcoded nil:
-			// https://cs.opensource.google/go/go/+/refs/tags/go1.20.3:src/net/http/cookiejar/jar.go;l=85
-			panic(fmt.Sprintf("As of Go 1.16, cookiejar.New err value is SUPPOSED to be hardcoded as nil: %v", err))
-		}
-		jar.log.Debug("new std lib cookiejar created")
-	}
-
-	return jar
+	return finalizeCookieContainer(jar)
 }
 
 // SetCookies func of the std lib interface.
@@ -160,9 +136,9 @@ func (jar *cookieContainer) SetCookies(uri *url.URL, cookies []*http.Cookie) {
 // Cookies func of the std lib interface.
 func (jar *cookieContainer) Cookies(uri *url.URL) []*http.Cookie {
 	// jar.log.Debugf("Cookies()")
-	if true {
-		// panic((&NoCookiesFoundError{Hosts: []string{uri.String()}}).Error())
-	}
+	// if true {
+	// 	panic((&NoCookiesFoundError{Hosts: []string{uri.String()}}).Error())
+	// }
 
 	// There is no error returned from the interface functions, so we have
 	// to just return even though it would make more sense to error here.
