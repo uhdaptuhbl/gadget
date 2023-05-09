@@ -20,10 +20,11 @@ var scrapingagents = []string{
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
 }
+
+// TODO: make this more generalized with more options for what list is used
 var randomizer = uarand.NewWithCustomList(scrapingagents)
 
 func SetRandomUserAgent(req *http.Request) error {
 	req.Header.Set("User-Agent", randomizer.GetRandom())
 	return nil
 }
-

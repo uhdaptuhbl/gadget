@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-type EmptySqlitePathError struct {}
+type EmptySqlitePathError struct{}
 
 func (e *EmptySqlitePathError) Error() string {
 	return "Empty path to sqlite Firefox cookie database"

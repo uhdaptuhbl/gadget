@@ -39,9 +39,9 @@ import (
 // https://golangbyexample.com/set-cookie-http-golang/
 // https://husni.dev/manage-http-cookie-in-go-with-cookie-jar/
 type cookieContainer struct {
-	log        logging.Logger
-	data       http.CookieJar
-	strict     bool
+	log    logging.Logger
+	data   http.CookieJar
+	strict bool
 
 	// TODO: are these actually useful?
 	errhandler ErrorHandler

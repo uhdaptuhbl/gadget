@@ -18,7 +18,7 @@ func (e *NoCookiesFoundError) Error() string {
 	return fmt.Sprintf("No Firefox cookies found for: %v", e.Hosts)
 }
 
-type NilCookieJarError struct {}
+type NilCookieJarError struct{}
 
 func (e *NilCookieJarError) Error() string {
 	return "Nil cookie jar value"

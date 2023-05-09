@@ -33,7 +33,6 @@ type Config struct {
 	// TLSConfig represents the `TLSClientConfig` field of the `http.Transport`.
 	TLS *TLSConfig `mapstructure:"tls" json:"tls,omitempty"`
 
-
 	// TODO: WIP
 	// Servers []*ServerConfig `mapstructure:"servers" json:"servers,omitempty"`
 }

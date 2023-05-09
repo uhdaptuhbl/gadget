@@ -99,7 +99,7 @@ func HandleErrors(handler ErrorHandler) Option {
 
 func newCookieContainer() *cookieContainer {
 	return &cookieContainer{
-		nameMap: make(map[string]string),
+		nameMap:    make(map[string]string),
 		nameLookup: make(map[string]string),
 	}
 }

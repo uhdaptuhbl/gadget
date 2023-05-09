@@ -7,42 +7,31 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/google/uuid"
 	"gorm.io/driver/sqlite" // Sqlite driver based on GGO
-
 	// "github.com/glebarez/sqlite" // Pure go SQLite driver
 	"gorm.io/gorm"
 
-	"gadget/logging"
-	"gadget/teapot"
 	"gadget/teapot/cookiejar"
 )
 
-type Option func(loader *ffxcookies)
-
-func WithLogger(log logging.Logger) Option {
-	return func(loader *ffxcookies) {
-		loader.log = log
-	}
-}
-
-// ffxcookies implements the teapot.CookieLoader interface
+// ffxcookies implements the gadget/teapot/cookiejar.Loader interface.
 type ffxcookies struct {
-	log    logging.Logger
-	table  string
-	dbpath string
-	jar    http.CookieJar
+	core  *firefoxCore
+	jar   http.CookieJar
+	table string
 }
 
-func NewCookieLoader(jar http.CookieJar, dbpath string, options ...Option) *ffxcookies {
-	var loader = &ffxcookies{dbpath: dbpath, jar: jar, table: "moz_cookies"}
-	for _, option := range options {
-		option(loader)
+func NewCookieLoader(jar http.CookieJar, options ...Option) *ffxcookies {
+	var loader = &ffxcookies{
+		core:  newFirefoxCore(options...),
+		jar:   jar,
+		table: "moz_cookies",
 	}
+
 	return loader
 }
 
-func (loader *ffxcookies) SetJar(jar http.CookieJar) teapot.CookieLoader {
+func (loader *ffxcookies) SetJar(jar http.CookieJar) cookiejar.Loader {
 	loader.jar = jar
 	return loader
 }
@@ -65,18 +54,15 @@ func (loader *ffxcookies) Load(hosts ...string) error {
 	var ffxcookies []FirefoxSQLiteCookie
 	var cookieCount int
 
-	if loader.dbpath == "" {
-		return new(EmptySqlitePathError)
+	if err = loader.core.valid(); err != nil {
+		return err
 	}
 	if loader.jar == nil {
 		return new(cookiejar.NilCookieJarError)
 	}
-	if loader.log == nil {
-		loader.log = logging.NewNoopLogger()
-	}
 
-	var log = loader.log
-	var dbpath = "file:"+loader.dbpath+"?immutable=1"
+	var log = loader.core.log
+	var dbpath = loader.core.cookieDBPath()
 	log.Debugf("loading Firefox cookies: %s", dbpath)
 
 	if db, err = gorm.Open(sqlite.Open(dbpath), &gorm.Config{}); err != nil {
@@ -93,7 +79,7 @@ func (loader *ffxcookies) Load(hosts ...string) error {
 				if host == "" {
 					continue
 				}
-				stmts = append(stmts, "host = '" + host + "'")
+				stmts = append(stmts, "host = '"+host+"'")
 			}
 			query.Where(strings.Join(stmts, " OR "))
 		}
@@ -121,8 +107,8 @@ func (loader *ffxcookies) Load(hosts ...string) error {
 		}
 
 		wrappedCookie = cookieWrapper{
-			host:       loc,
-			ffxcookie:  &ffxcookies[ffxindex],
+			host:      loc,
+			ffxcookie: &ffxcookies[ffxindex],
 			httpcookie: &http.Cookie{
 				Name:     ffxcookie.Name,
 				Value:    ffxcookie.Value,
@@ -133,10 +119,10 @@ func (loader *ffxcookies) Load(hosts ...string) error {
 				HttpOnly: ffxcookie.HttpOnly,
 				SameSite: http.SameSite(ffxcookie.SameSite),
 			},
-			valid:      nil,
+			valid: nil,
 		}
 		if ffxcookie.Host == "" {
-			return &cookiejar.CookieError{fmt.Sprintf("no host on cookie: %+v", *wrappedCookie.httpcookie)}
+			return &cookiejar.CookieError{Message: fmt.Sprintf("no host on cookie: %+v", *wrappedCookie.httpcookie)}
 		}
 
 		wrappedCookies[ffxcookie.Host] = append(wrappedCookies[ffxcookie.Host], wrappedCookie)
