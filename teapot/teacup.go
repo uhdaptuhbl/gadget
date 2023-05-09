@@ -61,30 +61,37 @@ type teacup struct {
 func (session *teacup) clone() *teacup {
 	var loc url.URL
 	var locptr *url.URL
+
 	if session.location != nil {
 		loc = *session.location
 		locptr = &loc
 	}
+
 	var clone = &teacup{
+		Builder: session.Builder,
+
+		log:    session.log,
 		client: session.client,
 		jar:    session.jar,
-		header: func() http.Header {
-			if session.header == nil {
-				return make(http.Header)
-			}
-			return session.header.Clone()
-		}(),
-		location: locptr,
-		method:   session.method,
-		body:     session.body,
 		headers: func() http.Header {
 			if session.headers == nil {
 				return make(http.Header)
 			}
 			return session.headers.Clone()
 		}(),
+		onRequest: session.onRequest[:],
+		onResponse: session.onResponse[:],
+
+		location: locptr,
+		method:   session.method,
+		body:     session.body,
+		header: func() http.Header {
+			if session.header == nil {
+				return make(http.Header)
+			}
+			return session.header.Clone()
+		}(),
 		err:     session.err,
-		Builder: session.Builder,
 	}
 	// CopyHeaders(clone.headers, session.headers, true)
 	return clone
@@ -215,13 +222,6 @@ func (session *teacup) fetch(ctx context.Context) *Result {
 	defer resp.Body.Close()
 	result.Response = resp
 
-	for _, handler := range session.onResponse {
-		if err = handler(resp); err != nil {
-			result.Error = err
-			return &result
-		}
-	}
-
 	// immediately reading the response ensures the body
 	// will be closed and the connection released
 	if body, err = io.ReadAll(resp.Body); err != nil {
@@ -229,6 +229,13 @@ func (session *teacup) fetch(ctx context.Context) *Result {
 		return &result
 	}
 	result.Body = body
+
+	for _, handler := range session.onResponse {
+		if err = handler(resp); err != nil {
+			result.Error = err
+			return &result
+		}
+	}
 
 	return &result
 }
