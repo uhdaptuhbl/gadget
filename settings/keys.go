@@ -7,52 +7,50 @@ import (
 )
 
 const KeyConfigPath = "config"
-const KeyEnvPrefix = "env-prefix"
-const KeyProfileMode = "profile-mode"
-const KeyVerbose = "verbose"
-const KeyDebug = "debug"
-const KeyForce = "force"
-
-const DefaultVerbose = false
-const DefaultDebug = false
-const DefaultForce = false
-const DefaultVerbosity = string(logging.LogVerbositySimple)
-
 const HelpConfigPath = "Specify `<path>` to config file."
+
+const KeyEnvPrefix = "env-prefix"
 const HelpEnvPrefix = "Set a `<prefix>` for environment variables."
 
+var KeyProfileMode = "profile-mode"
 var HelpProfileMode = "Set the `<profile>` mode: {" + PrettyProfileModes() + "}."
 
+const KeyVerbose = "verbose"
+const DefaultVerbose = false
 const HelpVerbose = "Enable more detailed output."
+
+const KeyDebug = "debug"
+const DefaultDebug = false
 const HelpDebug = "Enable debug output."
-const HelpForce = "Perform potentially destructive actions."
 
-const KeyLogFormat = "logformat"
-const KeyLogLevel = "loglevel"
-const KeyLogVerbosity = "verbosity"
-const KeyLogOutput = "logoutput"
+const KeyForce = "force"
+const DefaultForce = false
+const HelpForce = "Allow potentially destructive actions."
 
-const DefaultLogFormat = string(logging.LogFormatJSON)
-const DefaultLogLevel = string(logging.LogLevelInfo)
-const DefaultLogVerbosity = string(logging.LogVerbositySimple)
+var KeyLogLevel = "log-level"
+var DefaultLogLevel = string(logging.LogLevelDebug)
+var HelpLogLevel = "Set logging `<level>`: {" + logging.PrettyLogLevels() + "}."
 
+var KeyLogFormat = "log-format"
+var DefaultLogFormat = string(logging.LogFormatJSON)
+var HelpLogFormat = "Set logging `<format>`: {" + logging.PrettyLogFormats() + "}."
+
+var KeyLogVerbosity = "log-verbosity"
+var DefaultLogVerbosity = string(logging.LogVerbosityBare)
+var HelpLogVerbosity = "Set logging `<verbosity>`: {" + logging.PrettyLogVerbosities() + "}."
+
+var KeyLogOutputs = "log-outputs"
 var DefaultLogOutputs = []string{"stdout"}
-
-const HelpLogFormat = "logging format"
-const HelpLogLevel = "minimum logging level"
-
-var HelpLogVerbosity = "Set `<verbosity>` of output: {" + logging.PrettyLogVerbosities() + "}."
-
-const HelpLogOutput = "logging output file paths"
+var HelpLogOutputs = "Set logging file paths to write to: {stdout} (typically a local absolute file path, but when using the zap logging package, there are some additional options; see https://pkg.go.dev/go.uber.org/zap#Open)."
 
 var DefaultPFlagsXform = map[string]string{
 	KeyConfigPath:   "",
 	KeyEnvPrefix:    "",
 	KeyProfileMode:  "profile_mode",
+	KeyLogVerbosity: "logging.verbosity",
 	KeyLogFormat:    "logging.format",
 	KeyLogLevel:     "logging.level",
-	KeyLogVerbosity: "logging.verbosity",
-	KeyLogOutput:    "logging.outputpaths",
+	KeyLogOutputs:   "logging.outputpaths",
 }
 
 const ProfileCPU = "cpu"

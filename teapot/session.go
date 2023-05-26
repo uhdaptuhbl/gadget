@@ -51,7 +51,7 @@ type SessionMutator interface {
 }
 
 type sessionMutator struct {
-	tcup *teacup  `mapstructure:"-" json:"-"`
+	tcup *teacup              `mapstructure:"-" json:"-"`
 	opts []func(tcup *teacup) `mapstructure:"-" json:"-"`
 }
 
@@ -60,7 +60,7 @@ func newSessionMutator(tcup *teacup, opts ...func(*teacup)) SessionMutator {
 }
 
 func (mttr *sessionMutator) Logger(log logging.Logger) SessionMutator {
-	mttr.opts = append(mttr.opts, func(tcup *teacup) {tcup.log = log})
+	mttr.opts = append(mttr.opts, func(tcup *teacup) { tcup.log = log })
 	return mttr
 }
 
@@ -75,24 +75,24 @@ func (mttr *sessionMutator) AddHeaders(headers http.Header) SessionMutator {
 }
 
 func (mttr *sessionMutator) SetHeaders(headers http.Header) SessionMutator {
-	mttr.opts = append(mttr.opts, func(tcup *teacup) {tcup.headers = headers.Clone()})
+	mttr.opts = append(mttr.opts, func(tcup *teacup) { tcup.headers = headers.Clone() })
 	return mttr
 }
 
 func (mttr *sessionMutator) CookieJar(jar http.CookieJar) SessionMutator {
-	mttr.opts = append(mttr.opts, func(tcup *teacup) {tcup.jar = jar})
+	mttr.opts = append(mttr.opts, func(tcup *teacup) { tcup.jar = jar })
 	return mttr
 }
 
 func (mttr *sessionMutator) OnRequest(handlers ...RequestInterceptor) SessionMutator {
 	// NOTE: OnRequest will ADD handlers to what already exists!
-	mttr.opts = append(mttr.opts, func(tcup *teacup) {tcup.onRequest = append(tcup.onRequest, handlers...)})
+	mttr.opts = append(mttr.opts, func(tcup *teacup) { tcup.onRequest = append(tcup.onRequest, handlers...) })
 	return mttr
 }
 
 func (mttr *sessionMutator) OnResponse(handlers ...ResponseInterceptor) SessionMutator {
 	// NOTE: OnResponse will ADD handlers to what already exists!
-	mttr.opts = append(mttr.opts, func(tcup *teacup) {tcup.onResponse = append(tcup.onResponse, handlers...)})
+	mttr.opts = append(mttr.opts, func(tcup *teacup) { tcup.onResponse = append(tcup.onResponse, handlers...) })
 	return mttr
 }
 

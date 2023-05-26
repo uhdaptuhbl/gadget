@@ -22,9 +22,9 @@ var scrapingagents = []string{
 }
 
 // TODO: make this more generalized with more options for what list is used
-var randomizer = uarand.NewWithCustomList(scrapingagents)
+var userAgents = uarand.NewWithCustomList(scrapingagents)
 
 func SetRandomUserAgent(req *http.Request) error {
-	req.Header.Set("User-Agent", randomizer.GetRandom())
+	req.Header.Set("User-Agent", userAgents.GetRandom())
 	return nil
 }

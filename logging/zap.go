@@ -124,15 +124,19 @@ func (z *ZapLogger) Configure(config Config) error {
 	case LogVerbosityBare:
 		z.cfg.DisableCaller = true
 		z.cfg.DisableStacktrace = true
+		// z.cfg.EncoderConfig.LevelKey = ""
+		// z.cfg.EncoderConfig.TimeKey = ""
+		// z.cfg.EncoderConfig.NameKey = ""
+		// z.cfg.EncoderConfig.CallerKey = ""
+		// z.cfg.EncoderConfig.FunctionKey = ""
+		// z.cfg.EncoderConfig.StacktraceKey = ""
 	case LogVerbositySimple:
-		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = true
-	case LogVerbosityVerbose:
 		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	case LogVerbosityVerbose:
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = false
-		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 
 		// NOTE: sadly there is no hook or encoder that can be used to override
 		// and shorten the func key output which is the full path by default.

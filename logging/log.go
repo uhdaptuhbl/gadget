@@ -5,22 +5,6 @@ import (
 	"strings"
 )
 
-type LogFormat string
-
-func (lf LogFormat) String() string {
-	return string(lf)
-}
-
-const LogFormatHuman = LogFormat("human")
-const LogFormatJSON = LogFormat("json")
-
-func LogFormats() []string {
-	return []string{string(LogFormatHuman), string(LogFormatJSON)}
-}
-func PrettyLogFormats() string {
-	return strings.Join(LogFormats(), ",")
-}
-
 type LogLevel string
 
 func (ll LogLevel) String() string {
@@ -37,6 +21,22 @@ func LogLevels() []string {
 }
 func PrettyLogLevels() string {
 	return strings.Join(LogLevels(), ",")
+}
+
+type LogFormat string
+
+func (lf LogFormat) String() string {
+	return string(lf)
+}
+
+const LogFormatHuman = LogFormat("human")
+const LogFormatJSON = LogFormat("json")
+
+func LogFormats() []string {
+	return []string{string(LogFormatHuman), string(LogFormatJSON)}
+}
+func PrettyLogFormats() string {
+	return strings.Join(LogFormats(), ",")
 }
 
 type LogVerbosity string
@@ -71,8 +71,8 @@ const RequestIDKey CorrelationID = iota
 type Config struct {
 	Build     string       `mapstructure:"build" json:"build"`
 	Version   string       `mapstructure:"version" json:"version"`
-	Format    LogFormat    `mapstructure:"format" json:"format"`
 	Level     LogLevel     `mapstructure:"level" json:"level"`
+	Format    LogFormat    `mapstructure:"format" json:"format"`
 	Verbosity LogVerbosity `mapstructure:"verbosity" json:"verbosity"`
 
 	// typically a local absolute file path but when using the zap logging there are some additional options. See: https://pkg.go.dev/go.uber.org/zap#Open

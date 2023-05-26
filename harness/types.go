@@ -114,7 +114,7 @@ func (iArgs InvokeArgs) defaultFlagFuncs() []settings.FlagFunc {
 			flags.String(settings.KeyLogFormat, settings.DefaultLogFormat, settings.HelpLogFormat)
 			flags.String(settings.KeyLogLevel, settings.DefaultLogLevel, settings.HelpLogLevel)
 			flags.String(settings.KeyLogVerbosity, settings.DefaultLogVerbosity, settings.HelpLogVerbosity)
-			flags.StringSlice(settings.KeyLogOutput, settings.DefaultLogOutputs, settings.HelpLogOutput)
+			flags.StringSlice(settings.KeyLogOutputs, settings.DefaultLogOutputs, settings.HelpLogOutputs)
 		},
 		settings.Flags.Usage(func(flags *flag.FlagSet) {
 			var subcommands []string

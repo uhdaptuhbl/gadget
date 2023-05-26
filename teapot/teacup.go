@@ -79,7 +79,7 @@ func (session *teacup) clone() *teacup {
 			}
 			return session.headers.Clone()
 		}(),
-		onRequest: session.onRequest[:],
+		onRequest:  session.onRequest[:],
 		onResponse: session.onResponse[:],
 
 		location: locptr,
@@ -91,7 +91,7 @@ func (session *teacup) clone() *teacup {
 			}
 			return session.header.Clone()
 		}(),
-		err:     session.err,
+		err: session.err,
 	}
 	// CopyHeaders(clone.headers, session.headers, true)
 	return clone
