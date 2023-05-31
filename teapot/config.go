@@ -6,55 +6,39 @@ import (
 	"time"
 )
 
-type Config struct {
-	Bindport     int           `mapstructure:"bind_port" json:"bind_port"`
-	BindAddress  string        `mapstructure:"bind_address" json:"bind_address"`
-	CAPath       string        `mapstructure:"capath" json:"capath"`
-	CertPath     string        `mapstructure:"certpath" json:"certpath"`
-	KeyPath      string        `mapstructure:"keypath" json:"keypath"`
-	ReadTimeout  time.Duration `mapstructure:"read_timeout" json:"read_timeout"`
-	WriteTimeout time.Duration `mapstructure:"write_timeout" json:"write_timeout"`
-}
-
-// TLSConfig mirrors most of the tls.Config struct but with tags and serializable.
+// Config represents the inherently configurable properties of a Teapot.
 //
-// https://cs.opensource.google/go/go/+/refs/tags/go1.20.3:src/crypto/tls/common.go;l=521
-type TLSConfig struct {
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name. If InsecureSkipVerify is true, crypto/tls
-	// accepts any certificate presented by the server and any host name in that
-	// certificate. In this mode, TLS is susceptible to machine-in-the-middle
-	// attacks unless custom verification is used. This should be used only for
-	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify" json:"insecure_skip_verify,omitempty"`
+// TODO: add json, toml, yaml, mapstructure, validate tags
+type Config struct {
+	// Header indicates which HTTP headers should be sent and with
+	// what values with every request made by the Session.
+	Header http.Header `mapstructure:"headers" json:"headers,omitempty"`
 
-	// MinVersion contains the minimum TLS version that is acceptable.
+	// NoCookieJar disables Session cookies when set to true.
+	NoCookieJar bool `mapstructure:"no_cookie_jar" json:"no_cookie_jar,omitempty"`
+
+	// Timeout specifies a time limit for requests made by this
+	// Client. The timeout includes connection time, any
+	// redirects, and reading the response body. The timer remains
+	// running after Get, Head, Post, or Do return and will
+	// interrupt reading of the Response.Body.
 	//
-	// By default, TLS 1.2 is currently used as the minimum when acting as a
-	// client, and TLS 1.0 when acting as a server. TLS 1.0 is the minimum
-	// supported by this package, both as a client and as a server.
-	//
-	// The client-side default can temporarily be reverted to TLS 1.0 by
-	// including the value "x509sha1=1" in the GODEBUG environment variable.
-	// Note that this option will be removed in Go 1.19 (but it will still be
-	// possible to set this field to VersionTLS10 explicitly).
-	MinVersion uint16 `mapstructure:"min_version" json:"min_version,omitempty"`
+	// A Timeout of zero means no timeout. The Client cancels requests
+	// to the underlying Transport as if the Request's Context ended.
+	Timeout time.Duration `mapstructure:"timeout" json:"timeout,omitempty"`
+
+	// Transport represents the `http.Transport` configuration for the `http.Client`.
+	Transport *TransportConfig `mapstructure:"transport" json:"transport,omitempty"`
+
+	// TLSConfig represents the `TLSClientConfig` field of the `http.Transport`.
+	TLS *TLSConfig `mapstructure:"tls" json:"tls,omitempty"`
+
+	// TODO: WIP
+	// Servers []*ServerConfig `mapstructure:"servers" json:"servers,omitempty"`
 }
 
-func (cfg TLSConfig) Construct() *tls.Config {
-	var config = new(tls.Config)
-	cfg.Apply(config)
-
-	return config
-}
-
-// Apply will update a `*tls.Config`.
-func (cfg TLSConfig) Apply(config *tls.Config) {
-	if config == nil {
-		return
-	}
-	config.InsecureSkipVerify = cfg.InsecureSkipVerify
-	config.MinVersion = cfg.MinVersion
+func (cfg *Config) Builder() Constructor {
+	return Builder().Config(cfg)
 }
 
 // TransportConfig mirrors most of the http.Transport struct but with tags and serializable.
@@ -225,4 +209,53 @@ func (cfg TransportConfig) Apply(transport *http.Transport) {
 	if cfg.ReadBufferSize != 0 {
 		transport.ReadBufferSize = cfg.ReadBufferSize
 	}
+}
+
+// TLSConfig mirrors most of the tls.Config struct but with tags and serializable.
+//
+// https://cs.opensource.google/go/go/+/refs/tags/go1.20.3:src/crypto/tls/common.go;l=521
+type TLSConfig struct {
+	// InsecureSkipVerify controls whether a client verifies the server's
+	// certificate chain and host name. If InsecureSkipVerify is true, crypto/tls
+	// accepts any certificate presented by the server and any host name in that
+	// certificate. In this mode, TLS is susceptible to machine-in-the-middle
+	// attacks unless custom verification is used. This should be used only for
+	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify" json:"insecure_skip_verify,omitempty"`
+
+	// MinVersion contains the minimum TLS version that is acceptable.
+	//
+	// By default, TLS 1.2 is currently used as the minimum when acting as a
+	// client, and TLS 1.0 when acting as a server. TLS 1.0 is the minimum
+	// supported by this package, both as a client and as a server.
+	//
+	// The client-side default can temporarily be reverted to TLS 1.0 by
+	// including the value "x509sha1=1" in the GODEBUG environment variable.
+	// Note that this option will be removed in Go 1.19 (but it will still be
+	// possible to set this field to VersionTLS10 explicitly).
+	MinVersion uint16 `mapstructure:"min_version" json:"min_version,omitempty"`
+
+	// Bindport     int           `mapstructure:"bind_port" json:"bind_port"`
+	// BindAddress  string        `mapstructure:"bind_address" json:"bind_address"`
+	// CAPath       string        `mapstructure:"capath" json:"capath"`
+	// CertPath     string        `mapstructure:"certpath" json:"certpath"`
+	// KeyPath      string        `mapstructure:"keypath" json:"keypath"`
+	// ReadTimeout  time.Duration `mapstructure:"read_timeout" json:"read_timeout"`
+	// WriteTimeout time.Duration `mapstructure:"write_timeout" json:"write_timeout"`
+}
+
+func (cfg TLSConfig) Construct() *tls.Config {
+	var config = new(tls.Config)
+	cfg.Apply(config)
+
+	return config
+}
+
+// Apply will update a `*tls.Config`.
+func (cfg TLSConfig) Apply(config *tls.Config) {
+	if config == nil {
+		return
+	}
+	config.InsecureSkipVerify = cfg.InsecureSkipVerify
+	config.MinVersion = cfg.MinVersion
 }

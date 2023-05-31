@@ -66,7 +66,13 @@ type Application interface {
 }
 
 // ApplicationBase can be embedded in your Application struct to avoid having to reimplement functions not used.
-type ApplicationBase struct{}
+type ApplicationBase struct{
+	// Root   *cobra.Command
+	// Flags  *flag.FlagSet
+	// Snek   *viper.Viper
+	// Invoke *Invocation
+	// Log    logging.Logger
+}
 
 func (app *ApplicationBase) Command() (*cobra.Command, error)             { return nil, nil }
 func (app *ApplicationBase) Load(cmd *cobra.Command, args []string) error { return nil }

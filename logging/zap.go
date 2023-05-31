@@ -17,6 +17,18 @@ func GetZapLogger(z *ZapLogger) *zap.Logger {
 	return z.logger.Desugar().WithOptions(zap.AddCallerSkip(-1))
 }
 
+func SetInitialFields(cfg *zap.Config, version string, build string) {
+	cfg.InitialFields["pid"] = os.Getpid()
+	cfg.InitialFields["runtime"] = runtime.Version()
+	cfg.InitialFields["app"] = path.Base(os.Args[0])
+	cfg.InitialFields["version"] = version
+	cfg.InitialFields["build"] = build
+
+	if name, err := os.Hostname(); err == nil && name != "" {
+		cfg.InitialFields["host"] = name
+	}
+}
+
 /*
 ZapLogger is the Logger implementation with Uber's zap as its core.
 */
@@ -112,30 +124,27 @@ func (z *ZapLogger) Configure(config Config) error {
 	case LogVerbosityBare:
 		z.cfg.DisableCaller = true
 		z.cfg.DisableStacktrace = true
+		// z.cfg.EncoderConfig.LevelKey = ""
+		// z.cfg.EncoderConfig.TimeKey = ""
+		// z.cfg.EncoderConfig.NameKey = ""
+		// z.cfg.EncoderConfig.CallerKey = ""
+		// z.cfg.EncoderConfig.FunctionKey = ""
+		// z.cfg.EncoderConfig.StacktraceKey = ""
 	case LogVerbositySimple:
-		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = true
-	case LogVerbosityVerbose:
 		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	case LogVerbosityVerbose:
 		z.cfg.DisableCaller = false
 		z.cfg.DisableStacktrace = false
-		// z.cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 
 		// NOTE: sadly there is no hook or encoder that can be used to override
 		// and shorten the func key output which is the full path by default.
 		z.cfg.EncoderConfig.FunctionKey = "func"
 
 		z.cfg.InitialFields = make(map[string]interface{})
-		z.cfg.InitialFields["pid"] = os.Getpid()
-		z.cfg.InitialFields["runtime"] = runtime.Version()
-		z.cfg.InitialFields["app"] = path.Base(os.Args[0])
-		z.cfg.InitialFields["version"] = config.Version
-		z.cfg.InitialFields["build"] = config.Build
-
-		var name string
-		if name, err = os.Hostname(); err == nil && name != "" {
-			z.cfg.InitialFields["host"] = name
+		if false {
+			SetInitialFields(&z.cfg, config.Version, config.Build)
 		}
 	default:
 		return &InvalidVerbosityError{Input: string(config.Verbosity)}

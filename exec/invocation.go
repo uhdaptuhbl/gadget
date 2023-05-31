@@ -116,6 +116,47 @@ func (invk *Invocation) ParseFlags(flags *flag.FlagSet, ignoreUnknown bool) erro
 	return flags.Parse(invk.Args)
 }
 
+func (invk *Invocation) FlagUsages(flags *flag.FlagSet) {
+	var subcommands []string
+
+	// NOTE: Output() is the "correct" way to do it, however the output
+	// writer is not exported via an Output() method in the current
+	// version of pflag, so it will not be possible to use the correct
+	// accessor until a new pflag version is released > `v1.0.5`.
+	//
+	// 	var dest = flags.Output()
+	//
+	var dest = os.Stderr
+
+	var sep = "  "
+	var name = invk.Name
+	var ver = invk.Version
+	var build = invk.Build()
+
+	if len(ver) > 0 && ver[0] == 'v' && ver[:2] != "ver" {
+		ver = ver[1:]
+	}
+
+	var lines = []string{
+		"",
+		name + sep + ver + sep + build,
+		"",
+		fmt.Sprintf("USAGE:\n\t%s ARGS [OPTION...]", name),
+		"",
+		"OPTIONS:",
+		flags.FlagUsages(),
+	}
+	if len(subcommands) > 0 {
+		lines = append(lines, "ACTIONS:")
+		for _, action := range subcommands {
+			lines = append(lines, fmt.Sprintf("\t%s", action))
+		}
+	}
+	var output = strings.Join(lines, "\n") + "\n"
+
+	fmt.Fprint(dest, output)
+}
+
 func (invk *Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 	// TODO: add a version option and help option if needed
 
@@ -129,48 +170,29 @@ func (invk *Invocation) DefaultFlagFuncs() []settings.FlagFunc {
 		settings.Flags.BoolOption(settings.KeyDebug, settings.DefaultDebug, settings.HelpDebug),
 		settings.Flags.BoolOption(settings.KeyForce, settings.DefaultForce, settings.HelpForce),
 		func(flags *flag.FlagSet) {
-			flags.String(settings.KeyLogFormat, settings.DefaultLogFormat, settings.HelpLogFormat)
-			flags.String(settings.KeyLogLevel, settings.DefaultLogLevel, settings.HelpLogLevel)
-			flags.String(settings.KeyLogVerbosity, settings.DefaultLogVerbosity, settings.HelpLogVerbosity)
-			flags.StringSlice(settings.KeyLogOutput, settings.DefaultLogOutputs, settings.HelpLogOutput)
+			flags.Lookup(settings.KeyVerbose).NoOptDefVal = "true"
+			flags.Lookup(settings.KeyDebug).NoOptDefVal = "true"
+			flags.Lookup(settings.KeyForce).NoOptDefVal = "true"
 		},
-		settings.Flags.Usage(func(flags *flag.FlagSet) {
-			var subcommands []string
-
-			// NOTE: Output() is the "correct" way to do it, however, the output
-			// writer is not exported via Output() in the current version of pflag
-			// so it will not be possible to do it this way until a new version.
-			// var dest = flags.Output()
-			var dest = os.Stderr
-
-			var sep = "  "
-			var name = invk.Name
-			var ver = invk.Version
-			var build = invk.Build()
-
-			if len(ver) > 0 && ver[0] == 'v' && ver[:2] != "ver" {
-				ver = ver[1:]
+		func(flags *flag.FlagSet) {
+			flags.String(settings.KeyLogLevel, settings.DefaultLogLevel, settings.HelpLogLevel)
+			flags.String(settings.KeyLogFormat, settings.DefaultLogFormat, settings.HelpLogFormat)
+			flags.String(settings.KeyLogVerbosity, settings.DefaultLogVerbosity, settings.HelpLogVerbosity)
+			flags.StringSlice(settings.KeyLogOutputs, settings.DefaultLogOutputs, settings.HelpLogOutputs)
+			if err := flags.MarkHidden(settings.KeyLogLevel); err != nil {
+				return
 			}
-
-			var lines = []string{
-				"",
-				name + sep + ver + sep + build,
-				"",
-				fmt.Sprintf("USAGE:\n\t%s ARGS [OPTION...]", name),
-				"",
-				"OPTIONS:",
-				flags.FlagUsages(),
+			if err := flags.MarkHidden(settings.KeyLogFormat); err != nil {
+				return
 			}
-			if len(subcommands) > 0 {
-				lines = append(lines, "ACTIONS:")
-				for _, action := range subcommands {
-					lines = append(lines, fmt.Sprintf("\t%s", action))
-				}
+			if err := flags.MarkHidden(settings.KeyLogVerbosity); err != nil {
+				return
 			}
-			var output = strings.Join(lines, "\n") + "\n"
-
-			fmt.Fprint(dest, output)
-		}),
+			if err := flags.MarkHidden(settings.KeyLogOutputs); err != nil {
+				return
+			}
+		},
+		// settings.Flags.Usage(invk.FlagUsages),
 	}
 }
 
@@ -226,6 +248,7 @@ func (invk *Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) 
 			opts = append(opts, settings.Viper.ConfigPath(settings.DefaultConfigDir(invk.Name)))
 		}
 
+		// TODO: this prevents using a prefix of empty string!
 		if envPrefix != "" {
 			opts = append(opts, settings.Viper.EnvPrefix(envPrefix))
 			opts = append(opts, settings.Viper.AutomaticEnv)

@@ -97,6 +97,13 @@ func (dirs UserDirs) Cache() string {
 	return dirs.cache
 }
 
+func (dirs UserDirs) Data() string {
+	if dirs.Namespace != "" {
+		return filepath.Join(dirs.cache, dirs.Namespace)
+	}
+	return dirs.cache
+}
+
 func (dirs UserDirs) Config() string {
 	if dirs.Namespace != "" {
 		return filepath.Join(dirs.config, dirs.Namespace)

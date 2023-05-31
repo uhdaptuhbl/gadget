@@ -111,7 +111,8 @@ func (res *Result) Dump() string {
 			dump.WriteString("\n\t" + header + ": " + fmt.Sprintf("%v", values))
 		}
 	}
-	dump.WriteString(fmt.Sprintf("\nBODY: %d bytes", len(res.Body)))
+	// dump.WriteString(fmt.Sprintf("\nBODY: %d bytes", len(res.Body)))
+	dump.WriteString(fmt.Sprintf("\nBODY: %s", res.Text()))
 	return dump.String()
 }
 
