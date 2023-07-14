@@ -195,8 +195,8 @@ func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) 
 			var concrete = *flags
 			var useFlags = &concrete
 			var buf bytes.Buffer
-			useFlags.SetOutput(io.Writer(&buf))
 			settings.Flags.IgnoreUnknown(true)(useFlags)
+			useFlags.SetOutput(io.Writer(&buf))
 			if err = iArgs.ParseFlags(useFlags, true); err != nil {
 				if !errors.Is(err, flag.ErrHelp) {
 					return nil, err

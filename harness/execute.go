@@ -38,7 +38,7 @@ func Execute(initialize InitializeFunc, invokeArgs InvokeArgs) {
 		if r := recover(); r != nil {
 			var buf = make([]byte, 1<<10)
 			runtime.Stack(buf, false)
-			_, _ = fmt.Fprintf(os.Stderr, "[ERROR] recovered in Invoke() from panic:%v\n%s\n", r, string(buf))
+			_, _ = fmt.Fprintf(os.Stderr, "[ERROR] recovered in Invoke() from panic: %v\n%s\n", r, string(buf))
 		}
 	}()
 
