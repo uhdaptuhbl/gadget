@@ -81,12 +81,20 @@ func (iArgs Invocation) BuildViper(flags *flag.FlagSet, ext string, opts ...sett
 		}
 	}
 
+	if true {
+		panic("DefaultViperFuncs")
+	}
+
 	snek, err = settings.Viper.Build(opts...)
 	if err != nil {
 		return snek, err
 	}
 	if snek == nil {
 		return snek, fmt.Errorf("unknown error initializing Viper instance")
+	}
+
+	if true {
+		panic("Build")
 	}
 
 	return snek, err
