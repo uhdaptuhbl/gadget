@@ -1,7 +1,9 @@
 package exec
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -190,9 +192,10 @@ func (iArgs Invocation) DefaultViperFuncs(flags *flag.FlagSet, confType string) 
 				return nil, err
 			}
 		} else {
-			var useFlags *flag.FlagSet
 			var concrete = *flags
-			useFlags = &concrete
+			var useFlags = &concrete
+			var buf bytes.Buffer
+			useFlags.SetOutput(io.Writer(&buf))
 			settings.Flags.IgnoreUnknown(true)(useFlags)
 			if err = iArgs.ParseFlags(useFlags, true); err != nil {
 				if !errors.Is(err, flag.ErrHelp) {
